@@ -165,9 +165,6 @@ void MasterTroll::update(float delta)
 
 void MasterTroll::setAnimation(SpriteAnimation* animation)
 {
-    // No null anims !!!
-    if(animation == NULL) return;
-    
     //Glitch Fix!!!
     if(animation->getOpacity()<128){
         animation->setOpacity(255);

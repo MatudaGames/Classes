@@ -24,9 +24,6 @@ cocos2d::JniMethodInfo vibrateMethod;
 
 void vibrate()
 {
-    // No - just no
-    return;
-    
     bool vibrationEnabled = cocos2d::CCUserDefault::sharedUserDefault()->getBoolForKey("vibrationEnabled", true);
     
     if (vibrationEnabled)

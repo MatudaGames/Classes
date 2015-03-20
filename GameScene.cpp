@@ -886,6 +886,8 @@ void GameScene::CreateGameByMission()
     mRainActive = false;
     mTornadoActive = false;
     
+    spellMoveTo = false;
+    
     mMapDangerType = 1;//Basic danger only
     mMapDangerTimer = 0;
     mMapDangerTimerReq = (rand()%45)+45;
@@ -986,7 +988,7 @@ void GameScene::CreateGameByMission()
     _totalActiveBoosters = 0;
     
     
-    _diamondTimer = 0;
+    _diamondTimer = 0; 
     
     _willUseMushroom = false;
     
@@ -1063,6 +1065,10 @@ void GameScene::CreateGameByMission()
     
     _powersOnMap = CCArray::create();
     _powersOnMap->retain();
+    
+    
+    _spellBulletsOnMap = CCArray::create();
+    _spellBulletsOnMap->retain();
 	
 	_effects = CCArray::create();
 	_effects->retain();
@@ -1303,7 +1309,7 @@ void GameScene::CreateGameStartHUD()
     // The HUD back
     CCSprite* pointsBack = CCSprite::create("Interfeiss/in_game/crystal_count.png");
     pointsBack->setAnchorPoint(ccp(0.5, 1));
-    pointsBack->setPosition(ccp(visibleSize.width+pointsBack->getContentSize().width,visibleSize.height-10));
+    pointsBack->setPosition(ccp(visibleSize.width+pointsBack->getContentSize().width+21,visibleSize.height-55));//width, height-10
     addChild(pointsBack, kHUD_Z_Order-1);
     
     _scoreLabel->setAnchorPoint(ccp(0.5,0.5));
@@ -1318,13 +1324,15 @@ void GameScene::CreateGameStartHUD()
     
     _diamondsLabel->setAnchorPoint(ccp(0.5,0.5));
 	_diamondsLabel->setPosition(ccp(diamondsBack->getContentSize().width/2-45,diamondsBack->getContentSize().height/2+2));//27
+	diamondsBack->setVisible(false);
 	diamondsBack->addChild(_diamondsLabel);
     diamondsBack->setTag(90004);
     
     CCSprite* pointsTotalBack = CCSprite::create("Interfeiss/in_game/score.png");
-    pointsTotalBack->setAnchorPoint(ccp(0, 0.5));
-    pointsTotalBack->cocos2d::CCNode::setPosition(-pointsTotalBack->getContentSize().width, visibleSize.height-54);
-    pointsTotalBack->setVisible(false);
+    pointsTotalBack->setAnchorPoint(ccp(0.5, 1));
+    pointsTotalBack->setFlipX(true);
+    pointsTotalBack->cocos2d::CCNode::setPosition(ccp(600,600));
+    pointsTotalBack->setVisible(true);
 	addChild(pointsTotalBack, kHUD_Z_Order-1);
 	
 	if(mCurrentMission.Task_type == 3)
@@ -2142,6 +2150,9 @@ bool GameScene::init()
     
     _powersOnMap = CCArray::create();
     _powersOnMap->retain();
+    
+    _spellBulletsOnMap = CCArray::create();
+    _spellBulletsOnMap->retain();
 	
 	_diamonds = CCArray::create();
 	_diamonds->retain();
@@ -2563,7 +2574,7 @@ bool GameScene::init()
     CCSprite* pointsBack = CCSprite::create("Interfeiss/in_game/crystal_count.png");
     pointsBack->setAnchorPoint(ccp(0.5, 1));
 //    pointsBack->setPositionY(visibleSize.height-25);
-    pointsBack->setPosition(ccp(visibleSize.width+pointsBack->getContentSize().width,visibleSize.height-10));
+    pointsBack->setPosition(ccp(visibleSize.width+pointsBack->getContentSize().width+21,visibleSize.height-55));
     //cocos2d::CCNode::setPosition((visibleSize.width-pointsBack->getContentSize().width/2), visibleSize.height-10);
     addChild(pointsBack, kHUD_Z_Order-1);
     
@@ -2587,6 +2598,7 @@ bool GameScene::init()
     
     _diamondsLabel->setAnchorPoint(ccp(0.5,0.5));
 	_diamondsLabel->setPosition(ccp(diamondsBack->getContentSize().width/2-45,diamondsBack->getContentSize().height/2+2));//27
+	diamondsBack->setVisible(false);
 	diamondsBack->addChild(_diamondsLabel);
     diamondsBack->setTag(90004);
     
@@ -2599,9 +2611,10 @@ bool GameScene::init()
     //Game points score
     
     CCSprite* pointsTotalBack = CCSprite::create("Interfeiss/in_game/score.png");
-    pointsTotalBack->setAnchorPoint(ccp(0, 0.5));
+    pointsTotalBack->setAnchorPoint(ccp(0.5, 1));
+    pointsTotalBack->setFlipX(true);
 //    pointsTotalBack->cocos2d::CCNode::setPosition(visibleSize.width/2, visibleSize.height-40);
-    pointsTotalBack->cocos2d::CCNode::setPosition(-pointsTotalBack->getContentSize().width, visibleSize.height-54);
+    pointsTotalBack->cocos2d::CCNode::setPosition(ccp(600,600));
     addChild(pointsTotalBack, kHUD_Z_Order-1);
     
     _pointsLabel->setAnchorPoint(ccp(0.5,0.5));
@@ -5266,7 +5279,14 @@ void GameScene::CreateMasters()
     */
     
     // Check what do we need to create her [dwarfking_placeholder] NewPowerMachine.png
+    /*
     _MasterDwarfBase = CCSprite::create("dwarfking_placeholder.png");
+    _MasterDwarfBase->setTag(7002);
+    _MasterDwarfBase->setPosition(ccp(visibleSize.width-100,visibleSize.height+200));//Fall from top !!!
+    addChild(_MasterDwarfBase);
+    */
+
+	_MasterDwarfBase = MasterDwarf::create(this); //(this);
     _MasterDwarfBase->setTag(7002);
     _MasterDwarfBase->setPosition(ccp(visibleSize.width-100,visibleSize.height+200));//Fall from top !!!
     addChild(_MasterDwarfBase);
@@ -5296,7 +5316,7 @@ void GameScene::CreateMasters()
     p->setAutoRemoveOnFinish(true);
     _MasterDwarfBase->addChild(p,-1);
     
-    aFallOff = CCMoveTo::create(1.0f,ccp(visibleSize.width-64,360));
+    aFallOff = CCMoveTo::create(1.0f,ccp(visibleSize.width-95,360));
     aBounceOff = CCEaseExponentialIn::create(aFallOff);
     aDelay = CCDelayTime::create(0.6f);
     aFunc1 = CCCallFuncN::create(this, callfuncN_selector(GameScene::OnMasterHitGround));
@@ -5638,7 +5658,8 @@ void GameScene::CheckForDwarfCancel(Dwarf* theDwarf)
     for (int trollIndex = _bullets->count() - 1; trollIndex >= 0; --trollIndex)
     {
         TrollBullet* bullet = static_cast<TrollBullet*>(_bullets->objectAtIndex(trollIndex));
-        if(bullet->_dwarf == theDwarf){
+        
+       	if(bullet->_dwarf == theDwarf){
             bullet->_dwarf = NULL;//NO MORE DWARF
         }
     }
@@ -9010,24 +9031,17 @@ void GameScene::UpdateDwarfSpawn(float delta)
                 else{
                     _dwarfSpawnArrTimers.clear();
                     
-                    float aPossibleSpawnTImes = float(mCurrentMission.DSpawn_zone_step)/float(_DSpawnGameMinCurrent);//The min random time
-                    if(aPossibleSpawnTImes == 0)
+                    float aPossibleSpawnTImes = mCurrentMission.DSpawn_zone_step/_DSpawnGameMinCurrent;//The min random time
+                    float aRandomTIme = 0;
+                    int aSafeCheck = 0;
+                    for(int t = 0;t<_DSpawnGameMinCurrent;t++)
                     {
-                        // DO nothing !!!
-                    }
-                    else
-                    {
-                        float aRandomTIme = 0;
-                        int aSafeCheck = 0;
-                        for(int t = 0;t<_DSpawnGameMinCurrent;t++)
+                        // Safe check
+                        aSafeCheck = (rand() % int(aPossibleSpawnTImes*100));
+                        if(aSafeCheck>0)
                         {
-                            // Safe check
-                            aSafeCheck = (rand() % int(aPossibleSpawnTImes*100));
-                            if(aSafeCheck>0)
-                            {
-                                aRandomTIme = aSafeCheck/100+(t*aPossibleSpawnTImes);
-                                _dwarfSpawnArrTimers.push_back(aRandomTIme);
-                            }
+                            aRandomTIme = aSafeCheck/100+(t*aPossibleSpawnTImes);
+                            _dwarfSpawnArrTimers.push_back(aRandomTIme);
                         }
                     }
                 }
@@ -9292,7 +9306,6 @@ void GameScene::UpdateCrystalSpawn(float delta)
                             break;
                         }
                     }
-                    
                     // Spawn the power item
                     GeneratePowerUp(aRandomColorFin,mCurrentMission.PowerTimeOnMap);
                 }
@@ -9486,6 +9499,8 @@ void GameScene::updatePowerUpSpawn(float delta)
 
 void GameScene::GeneratePowerUp(int theType,int theTime)
 {
+	//This will be disable for a moment.
+	 
     // What power will it be?
     GameItem_PowerUp* Bee = GameItem_PowerUp::create(this,theType,theTime);
     
@@ -9497,6 +9512,7 @@ void GameScene::GeneratePowerUp(int theType,int theTime)
     
     this->addChild(Bee, getSpriteOrderZ(Bee->getPositionY()));
     _powersOnMap->addObject(Bee);
+    
 }
 
 void GameScene::updateActiveInGamePowers(float delta)
@@ -10326,6 +10342,7 @@ void GameScene::updateDwarfs(float delta)
                                 dwarf->removeFromSave();
                             }
                             else{
+                            	/*
                                 stopInGameSound("Footsteps");
                                 stopInGameSound("troll_walk");
                                 
@@ -10339,7 +10356,9 @@ void GameScene::updateDwarfs(float delta)
                                 
                                 //                            dwarf->createTrollCrash();
                                 //                            gob->HitGoblin(false);
-                                lose();
+                                */
+                                //lose();
+                                dwarf->removeFromSave();
                             }
                         }
                     }
@@ -13016,7 +13035,21 @@ void GameScene::generateDwarfMission(bool theInstant)
 //    }
     
     Dwarf* dwarf = Dwarf::create(this,theType);
+    /*
+	if(mCurrentMission.Task_type == MissionType_DwarfSave || mCurrentMission.Task_type == MissionType_DestroyTotem)
+	{
+		for(int otherIndex = _powersOnMap->count()-1;otherIndex>=0;--otherIndex)
+    	{
+    	GameItem_PowerUp* bee = static_cast<GameItem_PowerUp*>(_powersOnMap->objectAtIndex(otherIndex));
+       	if (bee->mPowerID >= 100)
+		{            
+    	dwarf->setPowerButton(bee->mPowerID);
     
+    	bee->onRemove();
+    	}
+		}
+	}
+	*/
     if(mCurrentMission.Task_type == MissionType_DwarfSave || mCurrentMission.Task_type == MissionType_DestroyTotem || 
 	mCurrentMission.Task_type == MissionType_CrystalCollect || mCurrentMission.Task_type == MissionType_DwarfCount)
     {
@@ -14878,6 +14911,82 @@ CCPoint GameScene::getRandomPointFromBlock(int theID)
 //    CCLog("theReturn X:%f Y:%f",theReturn.x,theReturn.y);
     
     return theReturn;
+}
+
+void GameScene::addSpellBullet()
+{
+	//playInGameSound("dwarf_freeze");
+	int dwarfIndex = _dwarves->count() - 1; 
+	for (int generateIndex = _possibleGeneratePoints.size();generateIndex>=0;--generateIndex)//some serious rocket science
+    {
+				
+		Dwarf* dwarf = static_cast<Dwarf*>(_dwarves->objectAtIndex(dwarfIndex));
+	
+		GeneratePoint generatePoint = _genearetPoints[generateIndex];
+		
+		float theDistance2 = sqrtf((generatePoint.x - dwarf->getPositionX())*(generatePoint.x-dwarf->getPositionX()) +
+                                                       (generatePoint.y-dwarf->getPositionY())*(generatePoint.y-dwarf->getPositionY()));
+		
+		if(theDistance2 <=130)
+		{
+    		dwarfIndex -= 1;
+    		if(dwarfIndex <=1)
+    		{
+    			addSpellDwarf = NULL;
+    			break;	
+			}
+    	}else{
+    		addSpellDwarf = dwarf;
+    		break;
+    		//if(generateIndex <=0)
+    	//	{
+    	//		break;	
+		//	}
+    	}
+	}
+	
+	if(addSpellDwarf == NULL)
+	{
+		
+	}else{
+	CCSprite* spellBullet = CCSprite::create("small_dot_blue.png");
+	spellBullet->setTag(98712);
+    spellBullet->setPosition(ccp(_MasterDwarfBase->getPositionX(),_MasterDwarfBase->getPositionY()));
+            		
+    CCMoveTo* CCMoveTo;
+    CCMoveTo = CCMoveTo::create(0.5f,ccp(addSpellDwarf->getPositionX(), addSpellDwarf->getPositionY()));
+            		
+	CCRepeatForever* aRepeat = CCRepeatForever::create(CCMoveTo);
+    spellBullet->runAction(aRepeat);
+    
+    CCCallFuncN* aFunction = CCCallFuncN::create(this, callfuncN_selector(GameScene::finishSpellBullet));
+    CCSequence* aSequence = CCSequence::create(CCMoveTo,aFunction,NULL);
+    spellBullet->runAction(aSequence);
+            		
+    //CCParticleSystemQuad* p = CCParticleSystemQuad::create("Particles/bullet_part.plist");
+    //p->setPosition(ccp(spellBullet->getContentSize().width/2,spellBullet->getContentSize().height/2));
+    //p->setAutoRemoveOnFinish(true);
+    //spellBullet->addChild(p);
+    //_spellBulletsOnMap->addObject(spellBullet);        		
+    addChild(spellBullet);
+	}
+}
+
+void GameScene::finishSpellBullet()
+{
+	//int dwarfIndex = _dwarves->count() - 2; 
+	removeChildByTag(98712);			
+	//Dwarf* dwarf = static_cast<Dwarf*>(_dwarves->objectAtIndex(dwarfIndex));
+	
+    for(int otherIndex = _powersOnMap->count()-1;otherIndex>=0;--otherIndex)
+    {
+    GameItem_PowerUp* bee = static_cast<GameItem_PowerUp*>(_powersOnMap->objectAtIndex(otherIndex));
+    if (bee->mPowerID >= 100)
+		{            
+    	addSpellDwarf->setPowerButton(bee->mPowerID);
+    	bee->onRemove();			
+    	}
+	}			
 }
 
 void GameScene::showRemovableEffects()
@@ -17820,7 +17929,7 @@ void GameScene::CreateTheRealTrollAction(cocos2d::CCObject *sender)
         
         _MasterTrollBase->runAction(aSeq);
     }
-    else if(theType == MASTER_ACTION_BULLET || theType == MASTER_ACTION_BULLET_ICE || theType == MASTER_ACTION_BULLET_POISON || theType == MASTER_ACTION_BULLET_STRAIGHT || theType == MASTER_ACTION_BULLET_SPLIT_MIDDLE || theType == MASTER_ACTION_BULLET_ZIGZAG || theType == MASTER_ACTION_BULLET_DECOMPOSE_BEGINNING || theType == MASTER_ACTION_BULLET_ONE_LINE || theType == MASTER_ACTION_BULLET_SPLIT_UP)
+    else if(theType == MASTER_ACTION_BULLET || theType == MASTER_ACTION_BULLET_ICE || theType == MASTER_ACTION_BULLET_POISON || theType == MASTER_ACTION_BULLET_STRAIGHT || theType == MASTER_ACTION_BULLET_SPLIT_MIDDLE || theType == MASTER_ACTION_BULLET_ZIGZAG || theType == MASTER_ACTION_BULLET_DECOMPOSE_BEGINNING || theType == MASTER_ACTION_BULLET_ONE_LINE || theType == MASTER_ACTION_BULLET_SPLIT_UP || theType == MASTER_ACTION_BULLET_SPELL)
     {
         if(mMT_LastBulletTimer==-1){
             mMT_LastBulletTimer = 10;
@@ -17862,7 +17971,7 @@ void GameScene::SetMasterTrollAction(int theType)
     // 1st add it to quae - pre warning stuff - then really do it !!!
     CCSprite* aPreWarnSprite;// = CCSprite::create();
     
-    if(theType == MASTER_ACTION_BULLET || theType == MASTER_ACTION_BULLET_ICE || theType == MASTER_ACTION_BULLET_POISON || theType == MASTER_ACTION_BULLET_STRAIGHT || theType == MASTER_ACTION_BULLET_SPLIT_MIDDLE || theType == MASTER_ACTION_BULLET_ZIGZAG || theType == MASTER_ACTION_BULLET_DECOMPOSE_BEGINNING || theType == MASTER_ACTION_BULLET_ONE_LINE || theType == MASTER_ACTION_BULLET_SPLIT_UP)
+    if(theType == MASTER_ACTION_BULLET || theType == MASTER_ACTION_BULLET_ICE || theType == MASTER_ACTION_BULLET_POISON || theType == MASTER_ACTION_BULLET_STRAIGHT || theType == MASTER_ACTION_BULLET_SPLIT_MIDDLE || theType == MASTER_ACTION_BULLET_ZIGZAG || theType == MASTER_ACTION_BULLET_DECOMPOSE_BEGINNING || theType == MASTER_ACTION_BULLET_ONE_LINE || theType == MASTER_ACTION_BULLET_SPLIT_UP || theType == MASTER_ACTION_BULLET_SPELL)
     {
         aPreWarnSprite = CCSprite::create("InGameIcons/BubbleBullet.png");
     }
@@ -17900,6 +18009,11 @@ void GameScene::SetMasterTrollAction(int theType)
     CCSequence* aWarnSeq = CCSequence::create(aScaleEase,aDelay,aFunction,NULL);
     
     aPreWarnSprite->runAction(aWarnSeq);
+}
+
+void GameScene::SetDwarfKingAnimation(const char* theAnimation)
+{
+    _MasterDwarfBase->setAnimationByName(theAnimation); 
 }
 
 bool GameScene::CanSpawnMasteTrollExtraEnemy()
@@ -17997,7 +18111,7 @@ void GameScene::CreateBulletByType(int theType,int theStartX,int theStartY)
     {
     	dwarf = static_cast<Dwarf*>(_dwarves->objectAtIndex(dwarfIndex));
     	
-    	if(mCurrentBulletType == MASTER_ACTION_BULLET_STRAIGHT)
+    	if(mCurrentBulletType == MASTER_ACTION_BULLET_STRAIGHT || mCurrentBulletType == MASTER_ACTION_BULLET_SPELL)
     	{
     		if(dwarf->getEffect()!=NULL)
     		{
@@ -18031,7 +18145,7 @@ void GameScene::CreateBulletByType(int theType,int theStartX,int theStartY)
     aBullet->_speedMax = mCurrentMission.MT_Bullet_Speed_Max;
     aBullet->_speedAddValue = (aBullet->_speedMax-aBullet->_speed)*0.1;
     
-    if(theType == MASTER_ACTION_BULLET_STRAIGHT)
+    if(theType == MASTER_ACTION_BULLET_STRAIGHT || theType == MASTER_ACTION_BULLET_SPELL)
     {
         aBullet->setAngle(atan2f(dwarf->getPositionY() - theStartY, dwarf->getPositionX() - theStartX));
         aBullet->_straightCords.setPoint(dwarf->getPositionX(),dwarf->getPositionY());
@@ -18101,7 +18215,7 @@ void GameScene::MasterAction_Bullet(cocos2d::CCObject *sender)
         return;
     }
     
-    if(mCurrentBulletType == MASTER_ACTION_BULLET_STRAIGHT || mCurrentBulletType == MASTER_ACTION_BULLET_SPLIT_MIDDLE || mCurrentBulletType == MASTER_ACTION_BULLET_ZIGZAG || mCurrentBulletType == MASTER_ACTION_BULLET_DECOMPOSE_BEGINNING || mCurrentBulletType == MASTER_ACTION_BULLET_ONE_LINE || mCurrentBulletType == MASTER_ACTION_BULLET_SPLIT_UP){
+    if(mCurrentBulletType == MASTER_ACTION_BULLET_STRAIGHT || mCurrentBulletType == MASTER_ACTION_BULLET_SPLIT_MIDDLE || mCurrentBulletType == MASTER_ACTION_BULLET_ZIGZAG || mCurrentBulletType == MASTER_ACTION_BULLET_DECOMPOSE_BEGINNING || mCurrentBulletType == MASTER_ACTION_BULLET_ONE_LINE || mCurrentBulletType == MASTER_ACTION_BULLET_SPLIT_UP || mCurrentBulletType == MASTER_ACTION_BULLET_SPELL){
         // No indicator ????
     }
     else{
@@ -18118,7 +18232,7 @@ void GameScene::MasterAction_Bullet(cocos2d::CCObject *sender)
     aBullet->_speedMax = mCurrentMission.MT_Bullet_Speed_Max;
     aBullet->_speedAddValue = (aBullet->_speedMax-aBullet->_speed)*0.1;
     
-    if(mCurrentBulletType == MASTER_ACTION_BULLET_STRAIGHT)
+    if(mCurrentBulletType == MASTER_ACTION_BULLET_STRAIGHT || mCurrentBulletType == MASTER_ACTION_BULLET_SPELL)
 	{
     	aBullet->setAngle(atan2f(dwarf->getPositionY() - _MasterTrollBase->getPositionY(), dwarf->getPositionX() - _MasterTrollBase->getPositionX()));
         aBullet->_straightCords.setPoint(dwarf->getPositionX(),dwarf->getPositionY());
@@ -18156,7 +18270,7 @@ void GameScene::MasterAction_Bullet(cocos2d::CCObject *sender)
         cBullet->_speed = mCurrentMission.MT_Bullet_Speed_Min;
         cBullet->_speedMax = mCurrentMission.MT_Bullet_Speed_Max;
         cBullet->_speedAddValue = (cBullet->_speedMax-cBullet->_speed)*0.1;
-        //cBullet->setAngle(0.6);//90,90 -2.75 kreisais apaksejais sturis //1.17 tuvu tam! :D //0.8 v?l tuv?k.,, :D //0.6 pan?k rezult?tu
+        //cBullet->setAngle(0.6);//90,90 
         cBullet->setVisible(false);
             
         //this->addChild(bBullet, 1000);
@@ -18188,7 +18302,8 @@ void GameScene::MasterAction_Bullet(cocos2d::CCObject *sender)
        mCurrentBulletType == MASTER_ACTION_BULLET_ZIGZAG ||
        mCurrentBulletType == MASTER_ACTION_BULLET_DECOMPOSE_BEGINNING ||
        mCurrentBulletType == MASTER_ACTION_BULLET_ONE_LINE ||
-       mCurrentBulletType == MASTER_ACTION_BULLET_SPLIT_UP)
+       mCurrentBulletType == MASTER_ACTION_BULLET_SPLIT_UP ||
+	   mCurrentBulletType == MASTER_ACTION_BULLET_SPELL)
     {
         ///aBullet->setAngle(atan2f(dwarf->getPositionY() - _MasterTrollBase->getPositionY(), dwarf->getPositionX() - _MasterTrollBase->getPositionX()));
         ///aBullet->_straightCords.setPoint(dwarf->getPositionX(),dwarf->getPositionY());
@@ -18836,7 +18951,7 @@ void GameScene::UpdateBullets(float delta)
                 if (dwarf)
                 {
                     if (ccpDistanceSQ(dwarf->getPosition(), troll->getPosition()) <= 1000)
-                    {
+                    {	
                         if(troll != NULL && troll->_dwarf != NULL && troll->_dwarf->getChildByTag(MT_BULLET_ID) != NULL){
                             troll->_dwarf->removeChildByTag(MT_BULLET_ID);
                         }
@@ -19351,6 +19466,8 @@ void GameScene::UpdateBattleLabel()
             // Do this only if spell is selected in shop
             if(spellsToSpanw.size() >= 1)
             {
+            	if(mCurrentMission.Task_type == MissionType_DwarfSave || mCurrentMission.Task_type == MissionType_DestroyTotem)
+				{
                 // For now random item choose?
                 
                 // Choose what is active !!!
@@ -19361,11 +19478,14 @@ void GameScene::UpdateBattleLabel()
                 
                 GameItem_PowerUp* Bee = GameItem_PowerUp::create(this,spellsToSpanw[mCurrentActiveSpell],mCurrentMission.PowerTimeOnMap);
                 
+                SetDwarfKingAnimation("Spell2");//set DwarfKing animation and shot bullet 
+                
                 // Spawn near cave ???
                 CCPoint spawnSpot;
                 
                 // Check if mission does not have some precise cords for spawn !!!
-                if(mCurrentMission.SpellSpawnPoints.size()>0)
+              
+				if(mCurrentMission.SpellSpawnPoints.size()>0)
                 {
                     // Do the forced stuff
                     int theSpawnRandomSpot = rand()%(mCurrentMission.SpellSpawnPoints.size()/2);
@@ -19420,6 +19540,7 @@ void GameScene::UpdateBattleLabel()
                 aBlitz->retain();
                 aBlitz->setAnchorPoint(ccp(0.5,0.5));
                 aBlitz->setPosition(spawnSpot);
+                aBlitz->setVisible(false);//disable for now
                 addChild(aBlitz,kPoints_Z_Order);
                 
                 CCDelayTime* aDelay = CCDelayTime::create(0.5f);
@@ -19429,9 +19550,10 @@ void GameScene::UpdateBattleLabel()
                 
                 // The item add
                 Bee->setPosition(spawnSpot);
-                
+                Bee->setVisible(false);
                 this->addChild(Bee, getSpriteOrderZ(Bee->getPositionY()));
                 _powersOnMap->addObject(Bee);
+            	}
             }
             
             mMasterTroll_Attack = 0;//Reset to 0
