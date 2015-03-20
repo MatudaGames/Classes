@@ -9031,17 +9031,25 @@ void GameScene::UpdateDwarfSpawn(float delta)
                 else{
                     _dwarfSpawnArrTimers.clear();
                     
-                    float aPossibleSpawnTImes = mCurrentMission.DSpawn_zone_step/_DSpawnGameMinCurrent;//The min random time
-                    float aRandomTIme = 0;
-                    int aSafeCheck = 0;
-                    for(int t = 0;t<_DSpawnGameMinCurrent;t++)
+//                    float aPossibleSpawnTImes = mCurrentMission.DSpawn_zone_step/_DSpawnGameMinCurrent;//The min random time
+                    float aPossibleSpawnTImes = float(mCurrentMission.DSpawn_zone_step)/float(_DSpawnGameMinCurrent);//The min random time
+                    if(aPossibleSpawnTImes == 0)
                     {
-                        // Safe check
-                        aSafeCheck = (rand() % int(aPossibleSpawnTImes*100));
-                        if(aSafeCheck>0)
+                        // DO nothing !!!
+                    }
+                    else
+                    {
+                        float aRandomTIme = 0;
+                        int aSafeCheck = 0;
+                        for(int t = 0;t<_DSpawnGameMinCurrent;t++)
                         {
-                            aRandomTIme = aSafeCheck/100+(t*aPossibleSpawnTImes);
-                            _dwarfSpawnArrTimers.push_back(aRandomTIme);
+                            // Safe check
+                            aSafeCheck = (rand() % int(aPossibleSpawnTImes*100));
+                            if(aSafeCheck>0)
+                            {
+                                aRandomTIme = aSafeCheck/100+(t*aPossibleSpawnTImes);
+                                _dwarfSpawnArrTimers.push_back(aRandomTIme);
+                            }
                         }
                     }
                 }
