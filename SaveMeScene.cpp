@@ -301,8 +301,18 @@ void SaveMeScene::endGameScreen()
     aScoreBoard->addChild(_pointLabel);	
     
     GameScene* gameScenee = dynamic_cast<GameScene*>(this->getParent());
+    
+    if(gameScenee->_SaveDwarfsCounter>0 && gameScenee->_dwarves->count()+1>1)
+    {
+    	gameScenee->mCompleteScore += (gameScenee->_SaveDwarfsCounter + gameScenee->_dwarves->count())*100*2;
+    }else if (gameScenee->_SaveDwarfsCounter>0){
+    	gameScenee->mCompleteScore += gameScenee->_SaveDwarfsCounter*100*2;
+    }else if (gameScenee->_dwarves->count()+1>1){
+    	gameScenee->mCompleteScore += gameScenee->_dwarves->count()*100*2;
+    }
+    
     std::stringstream missionPoints;
-    missionPoints << gameScenee->mMasterTroll_Attack;
+    missionPoints << gameScenee->mCompleteScore;
     _pointLabel->setString(missionPoints.str().c_str());
     
     //Add mission status
@@ -323,6 +333,36 @@ void SaveMeScene::endGameScreen()
     CCSprite* cStar = CCSprite::create("Interfeiss/endgame_screen/New/Star_Off.png");
     cStar->setPosition(ccp(mKautkasScreen->getContentSize().width/2.0f,mKautkasScreen->getContentSize().height/2-40));//1,2
     addChild(cStar,kHUD_Z_Order+1);
+    
+    if(gameScenee->mCompleteScore>=gameScenee->_mission_star_points_1 && gameScenee->_missionCurrentValue<gameScenee->_mission_star_points_2){
+    	CCSprite* aStarGlow = CCSprite::create("Interfeiss/endgame_screen/New/Star_On.png");
+    	aStarGlow->setPosition(ccp(mKautkasScreen->getContentSize().width/3.2f,mKautkasScreen->getContentSize().height/2-40));
+    	addChild(aStarGlow,kHUD_Z_Order+1);
+    }
+	if(gameScenee->mCompleteScore>=gameScenee->_mission_star_points_2 && gameScenee->_missionCurrentValue<gameScenee->_mission_star_points_3)
+    {
+    	CCSprite* aStarGlow = CCSprite::create("Interfeiss/endgame_screen/New/Star_On.png");
+    	aStarGlow->setPosition(ccp(mKautkasScreen->getContentSize().width/3.2f,mKautkasScreen->getContentSize().height/2-40));
+    	addChild(aStarGlow,kHUD_Z_Order+1);
+    	
+    	CCSprite* bStarGlow = CCSprite::create("Interfeiss/endgame_screen/New/Star_On.png");
+    	bStarGlow->setPosition(ccp(mKautkasScreen->getContentSize().width/1.4f-20,mKautkasScreen->getContentSize().height/2-40));
+    	addChild(bStarGlow,kHUD_Z_Order+1);
+    }
+	if(gameScenee->mCompleteScore>=gameScenee->_mission_star_points_3)
+    {
+    	CCSprite* aStarGlow = CCSprite::create("Interfeiss/endgame_screen/New/Star_On.png");
+    	aStarGlow->setPosition(ccp(mKautkasScreen->getContentSize().width/3.2f,mKautkasScreen->getContentSize().height/2-40));
+    	addChild(aStarGlow,kHUD_Z_Order+1);
+    	
+    	CCSprite* bStarGlow = CCSprite::create("Interfeiss/endgame_screen/New/Star_On.png");
+    	bStarGlow->setPosition(ccp(mKautkasScreen->getContentSize().width/1.4f-20,mKautkasScreen->getContentSize().height/2-40));
+    	addChild(bStarGlow,kHUD_Z_Order+1);
+    	
+    	CCSprite* cStarGlow = CCSprite::create("Interfeiss/endgame_screen/New/Star_On.png");
+    	cStarGlow->setPosition(ccp(mKautkasScreen->getContentSize().width/2.0f,mKautkasScreen->getContentSize().height/2-40));
+    	addChild(cStarGlow,kHUD_Z_Order+1);
+    }
     
     
     // Add 2 buttons clouse and play for now !!!
@@ -385,7 +425,7 @@ void SaveMeScene::playAgain(CCObject* sender)
         User::getInstance()->getMissionManager().mCurrentActiveMission;
         
         CCScene* scene;
-        
+        _game->doItOnce = false;
         // If need to show some promo - do it
         scene = GameScene::scene();
         CCTransitionScene* transition = CCTransitionFade::create(0.5f, scene);

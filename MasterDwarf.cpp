@@ -65,7 +65,7 @@ bool MasterDwarf::init(GameScene* game)
     
     // The base pad where Object stands
     _base = CCSprite::create("small_dot_red.png");
-    //_base->setAnchorPoint(ccp(0.5f,1));
+    //_base->setAnchorPoint(ccp(2.3f,5));
     addChild(_base);
     
     // The bottom of MD
@@ -77,6 +77,7 @@ bool MasterDwarf::init(GameScene* game)
     _idleAnim->retain();
     
     _spell_1_Anim = SpriteAnimation::create("Characters/dwarf_king/king_spell1.plist");
+    _spell_1_Anim->setPosition(ccp(0,40));
     _spell_1_Anim->retain();
     
     _spell_2_Anim = SpriteAnimation::create("Characters/dwarf_king/king_spell2.plist");
@@ -132,10 +133,10 @@ void MasterDwarf::setAnimationByName(const char* theAnimation)
     {
         setAnimation(_spell_2_Anim);
         
-        CCDelayTime* aDelay = CCDelayTime::create(3.0f);
-        CCCallFuncN* func = CCCallFuncN::create(this, callfuncN_selector(MasterDwarf::setSpellToDwarf));
-        CCSequence* aSeq1 = CCSequence::create(aDelay,func,NULL);
-        runAction(aSeq1);
+        //CCDelayTime* aDelay = CCDelayTime::create(3.0f);
+        //CCCallFuncN* func = CCCallFuncN::create(this, callfuncN_selector(MasterDwarf::setSpellToDwarf));
+        //CCSequence* aSeq1 = CCSequence::create(aDelay,func,NULL);
+        //runAction(aSeq1);
     }
     
 }

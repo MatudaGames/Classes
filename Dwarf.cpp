@@ -94,6 +94,7 @@ bool Dwarf::init(GameScene* game,int theType)
     mCanSearchForTrollsForSnap = false;
     mSnapedToMasterTroll = false;
     mSnapedToTotem = false;
+    mSnapedTest = false;
     
     mContainsPowerUp = -1;// No power
     mSnapedTroll = NULL;
@@ -1533,6 +1534,32 @@ void Dwarf::ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
                 mCanSearchForTrollsForSnap = false;
                 mSnapedToMasterTroll = false;
                 mSnapedToTotem = false;
+                mSnapedTest = false; 
+                
+                if(mContainsPowerUp == DWARF_SPELL_FREEZER || mContainsPowerUp == DWARF_SPELL_ELECTRIFY) //Freezer and Snap only for enemy trolls
+                { 
+                
+  					for(int otherIndex = _game->_otherEnemy->count()-1;otherIndex>=0;--otherIndex)
+    				{
+        				Enemy_Bee* bee = static_cast<Enemy_Bee*>(_game->_otherEnemy->objectAtIndex(otherIndex));
+        				
+        				if (bee->isVisible())
+        				{
+        					if (ccpDistanceSQ(bee->getPosition(), position) <= FAT_SNAP_TO_CAVE)
+        					{
+        						//mSnapedBee = bee;
+        						mSnapedTest = true;
+                                
+                                addMovePoint(bee->getPosition(), position,false);
+                                _touchEnded = true;
+                                connectLine();
+                                vibrate();
+                                FireBulletAtTroll(mContainsPowerUp);
+                                break;
+        					}
+        				}
+            		}
+            	}
                 
                 // By spell type - can do correct actions only !!!
                 if(mContainsPowerUp == DWARF_SPELL_FREEZER || mContainsPowerUp == DWARF_SPELL_ELECTRIFY) //Freezer and Snap only for enemy trolls
@@ -2577,6 +2604,15 @@ void Dwarf::FireBulletAtTroll(int thePowerID)
     {
         aMoveAction = CCMoveTo::create(0.5f,ccp(_game->mTotem->getPositionX(),_game->mTotem->getPositionY()));
     }
+    else if (mSnapedTest)
+    {
+    		for(int otherIndex = _game->_otherEnemy->count()-1;otherIndex>=0;--otherIndex)
+    	{
+        		Enemy_Bee* bee = static_cast<Enemy_Bee*>(_game->_otherEnemy->objectAtIndex(otherIndex));
+        				
+        		aMoveAction = CCMoveTo::create(0.5f,ccp(bee->getPositionX(),bee->getPositionY()));
+        }
+    }
     else
     {
         aMoveAction = CCMoveTo::create(0.5f,ccp(mSnapedTroll_FallBack->getPositionX(),mSnapedTroll_FallBack->getPositionY()));
@@ -2611,11 +2647,45 @@ void Dwarf::OnFireBulletHitTroll(CCNode* sender)
         // New stuff - check by item powa
         _game->OnAttackHitTotem(ccp(getPositionX(),getPositionY()),mSpellForAttack);
     }
+    else if(mSnapedTest)
+    {
+    	if(sender->getTag() == 0)
+        {
+        	if(mPowerUpIcon != NULL){
+                removeChild(mPowerUpIcon);
+            }
+        for(int otherIndex = _game->_otherEnemy->count()-1;otherIndex>=0;--otherIndex)
+    	{
+          Enemy_Bee* bee = static_cast<Enemy_Bee*>(_game->_otherEnemy->objectAtIndex(otherIndex));
+          bee->removeFromSave();		
+          _game->mCompleteScore+=50; 
+    	}
+		}
+        else if(sender->getTag() == 1)
+    {
+    		if(mPowerUpIcon != NULL){
+                removeChild(mPowerUpIcon);
+            }
+    	for(int otherIndex = _game->_otherEnemy->count()-1;otherIndex>=0;--otherIndex)
+    	{
+          Enemy_Bee* bee = static_cast<Enemy_Bee*>(_game->_otherEnemy->objectAtIndex(otherIndex));
+          bee->mFreezedTime += 10;		
+    	}
+    }
+    }
     else
     {
         if(sender->getTag() == 0)
         {
             mSnapedTroll_FallBack->removeFromSave();
+            if(mSnapedTroll_FallBack->mGoblinFunctional == true)
+            {
+                _game->mCompleteScore+=20;	
+            }else if(mSnapedTroll_FallBack->mEvilTreeFunctional == true){
+            	_game->mCompleteScore+=40;
+            }else{
+            	_game->mCompleteScore+=30;
+            }
             if(_game->mKillTrollsAmountLeft>0){
                 _game->mKillTrollsAmountLeft-=1;
                 if(_game->mKillTrollsAmountLeft <= 0){
@@ -2649,6 +2719,7 @@ void Dwarf::OnFireBulletHitTroll(CCNode* sender)
     // Finish
     mSnapedToMasterTroll = false;
     mSnapedToTotem = false;
+    mSnapedTest = false;
 }
 
 // The dull snap crap
