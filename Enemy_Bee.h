@@ -74,6 +74,8 @@ public:
     
     void letsMove();
     
+    void removeFromSave();
+    
     void AddShootAni();
     int aCurrentAngle;
     
@@ -84,6 +86,10 @@ public:
     int mMoveIndex3;
     bool mMoveClock;
     int mMoveCurrentDir;
+    
+    int mFreezedTime;
+    
+    void CreateBullet(int theAngle);
     
     int bulletCount;
     int mGULGUL;

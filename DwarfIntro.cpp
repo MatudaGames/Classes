@@ -57,9 +57,15 @@ bool DwarfIntro::init(GameScene* game, Dwarf* dwarf)
     {
         _introLight->setScale(GLOBAL_SCALE);
     }
+    //_introLight->setColor(ccc3(154,16,16));
 	addChild(_introLight);
 	_introLight->setOpacity(0.0f);
-	
+	if(_game->greenLight == true)
+	{
+		_introLight->setColor(ccc3(0,153,0));
+	}else{
+		_introLight->setColor(ccc3(255,255,255));	
+	}
     /*
 //	schedule(schedule_selector(IntroAnimation::finished), 3.0f, 1, 0.0f);
     if(User::getInstance()->mSpecial_16_Mission || User::getInstance()->mSpecial_17_Mission || User::getInstance()->mSpecial_18_Mission

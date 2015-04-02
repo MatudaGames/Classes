@@ -173,7 +173,7 @@ CCScene* GameScene::scene()
 }
 
 GameScene::GameScene():
-	dailyChallengeInfo(NULL), _bullets(NULL),_dwarves(NULL), _trolls(NULL), _crystals(NULL), _effects(NULL), _diamonds(NULL), mUniversalItems(NULL),
+	dailyChallengeInfo(NULL), _bullets(NULL), _stings(NULL), _dwarves(NULL), _trolls(NULL), _crystals(NULL), _effects(NULL), _diamonds(NULL), mUniversalItems(NULL),
 	_introAnimations(NULL), _scoreLabel(NULL), _cave(NULL), _caveMask(NULL), _mask(NULL),_MasterTroll_IdleAnimation(NULL),_MasterTroll_WinAnimation(NULL),
 	_gameTime(0), _gameTimeReverse(0)
 {
@@ -188,6 +188,7 @@ GameScene::~GameScene()
     if(_MasterTroll_WinAnimation)_MasterTroll_WinAnimation->release();
     
     if (_bullets) _bullets->release();
+    if (_stings) _stings->release();
 	if (_dwarves) _dwarves->release();
     if (_goblins) _goblins->release();
     if (_hidras) _hidras->release();
@@ -908,6 +909,11 @@ void GameScene::CreateGameByMission()
     _whenToRain = 0;
     rainTimeSet = false;
     
+    newDwarfIsSpawn = false;
+    newInstantDwarfIsSpawn = false;
+    doItOnce = false;
+    greenLight = false;
+    
     _windTime = 0;
     _whenToWind = (rand()%45)+45;
     
@@ -979,6 +985,8 @@ void GameScene::CreateGameByMission()
     
     _gameTimeReverse = 0;
     _actionTrollSpawnTime = -1;
+    
+    mCompleteScore = 0; 
     
     _currentMinSpwanedTime = 0;//For the first meteorite - some random value above 20sec?
     _currentMinForSpawn = -1;
@@ -1068,6 +1076,9 @@ void GameScene::CreateGameByMission()
     
     _bullets = CCArray::create();
 	_bullets->retain();
+	
+	_stings = CCArray::create();
+	_stings->retain();
     
 	_dwarves = CCArray::create();
 	_dwarves->retain();
@@ -1492,11 +1503,15 @@ void GameScene::CreateGameStartHUD()
 	_crystalsGathered->setString("0");
     _crystalsGathered->setColor(ccc3(255,246,200));
     
+    _pointsCountLabel = CCLabelTTF::create("Game", FONT_SKRANJI, TITLE_FONT_SIZE*0.5, CCSize(120, 55), kCCTextAlignmentCenter, kCCVerticalTextAlignmentBottom);
+	_pointsCountLabel->setString("0");
+    _pointsCountLabel->setColor(ccc3(255,246,200));
+    
     
     // The HUD back
     CCSprite* pointsBack = CCSprite::create("Interfeiss/in_game/crystal_count.png");
-    pointsBack->setAnchorPoint(ccp(0.5, 1));
-    pointsBack->setPosition(ccp(visibleSize.width+pointsBack->getContentSize().width+21,visibleSize.height-55));//width, height-10
+    pointsBack->setAnchorPoint(ccp(0.5, 2.5));
+    pointsBack->setPosition(ccp(visibleSize.width+pointsBack->getContentSize().width+221,visibleSize.height-555));//width, height-10
     addChild(pointsBack, kHUD_Z_Order-1);
     
     _scoreLabel->setAnchorPoint(ccp(0.5,0.5));
@@ -1515,13 +1530,25 @@ void GameScene::CreateGameStartHUD()
 	diamondsBack->addChild(_diamondsLabel);
     diamondsBack->setTag(HUD_CRYSTALS_BACK);
     
+    CCSprite* pointsScoreBack = CCSprite::create("Interfeiss/in_game/score.png");
+    pointsScoreBack->setAnchorPoint(ccp(0, 0.5));
+    pointsScoreBack->cocos2d::CCNode::setPosition(ccp(800,670));
+    pointsScoreBack->setFlipX(true);
+    pointsScoreBack->setVisible(true);
+	addChild(pointsScoreBack, kHUD_Z_Order-1);
+	
+	_pointsCountLabel->setAnchorPoint(ccp(0.5,0.5));
+	_pointsCountLabel->setPosition(ccp(pointsScoreBack->getContentSize().width/2-45,pointsScoreBack->getContentSize().height/2+15));//27
+	pointsScoreBack->setVisible(true);
+	pointsScoreBack->addChild(_pointsCountLabel);
+    
      // What the heck is this ???
     /*
     CCSprite* pointsTotalBack = CCSprite::create("Interfeiss/in_game/score.png");
     pointsTotalBack->setAnchorPoint(ccp(0.5, 1));
     pointsTotalBack->setFlipX(true);
     pointsTotalBack->cocos2d::CCNode::setPosition(ccp(600,600));
-    pointsTotalBack->setVisible(true);
+    pointsTotalBack->setVisible(false);
 	addChild(pointsTotalBack, kHUD_Z_Order-1);
     */
     
@@ -2345,21 +2372,21 @@ void GameScene::UpdateMissionStars()
     */
     
     //Check by current mission and points
-    if(mTotalPointsInGame>=_mission_star_points_1){
+    if(mCompleteScore>=_mission_star_points_1){//mTotalPointsInGame
         _mission_star_1->setOpacity(255);
     }
     else{
         _mission_star_1->setOpacity(80);
     }
     
-    if(mTotalPointsInGame>=_mission_star_points_2){
+    if(mCompleteScore>=_mission_star_points_2){
         _mission_star_2->setOpacity(255);
     }
     else{
         _mission_star_2->setOpacity(80);
     }
     
-    if(mTotalPointsInGame>=_mission_star_points_3){
+    if(mCompleteScore>=_mission_star_points_3){
         _mission_star_3->setOpacity(255);
     }
     else{
@@ -3417,12 +3444,12 @@ void GameScene::CreateMasters()
     CCSequence* aSeq = CCSequence::create(aDelay,aBounceOff,aFunc1,NULL);
     _MasterTrollBase->runAction(aSeq);
     
-    p = CCParticleSystemQuad::create("Particles/FallDownParticle.plist");
-    p->setTag(70003);// The particle tag for remove when falled down !!!
-    p->setPosition(ccp(_MasterDwarfBase->getContentSize().width/2,_MasterDwarfBase->getContentSize().height/2));
-    p->setPositionType(kCCPositionTypeGrouped);
-    p->setAutoRemoveOnFinish(true);
-    _MasterDwarfBase->addChild(p,-1);
+    //p = CCParticleSystemQuad::create("Particles/FallDownParticle.plist");
+    //p->setTag(70003);// The particle tag for remove when falled down !!!
+    //p->setPosition(ccp(_MasterDwarfBase->getContentSize().width/2,_MasterDwarfBase->getContentSize().height/2));
+   // p->setPositionType(kCCPositionTypeGrouped);
+    //p->setAutoRemoveOnFinish(true);
+   // _MasterDwarfBase->addChild(p,-1);
     
     aFallOff = CCMoveTo::create(1.0f,ccp(visibleSize.width-95,360));
     aBounceOff = CCEaseExponentialIn::create(aFallOff);
@@ -7685,6 +7712,7 @@ void GameScene::UpdateTestStuff(float delta)
     }
     
     UpdateBullets(delta);
+    UpdateSting(delta);
 }
 
 void GameScene::updatePowerUpSpawn(float delta)
@@ -8300,6 +8328,13 @@ void GameScene::updateDwarfs(float delta)
                     
                     CheckMissionByValue(MissionType_PointCount,mTotalPoints);
                     
+                    if(mTotalCombo>1)
+                    {
+                    	mCompleteScore += (100*0.1f*mTotalCombo)+100;
+                    }else{
+                    	mCompleteScore += 100;	
+                    }
+                    
                     //--------------------------------
                     
                     
@@ -8447,6 +8482,13 @@ void GameScene::updateDwarfs(float delta)
                     mTotalPoints+=(CAVE_SCORE*_dwarfPointMulty)*mCombo_DwarfEnter;
                     
                     CheckMissionByValue(MissionType_PointCount,mTotalPoints);
+                    
+                    if(mTotalCombo>1)
+                    {
+                    	mCompleteScore += (100*0.1f*mTotalCombo)+100;
+                    }else{
+                    	mCompleteScore += 100;	
+                    }
                     
                     //--------------------------------
                     
@@ -9097,6 +9139,19 @@ void GameScene::updateDwarfs(float delta)
                             else if(crystal->_color == CRYSTAL_COLOR_YELLOW) _crystal_Point_counter+=50;
                         }
                         
+                         if(mTotalCombo>1)
+                        {
+                        	if(crystal->_color == CRYSTAL_COLOR_BLUE) mCompleteScore+=(20*0.1f*mTotalCombo)+20;
+                            else if(crystal->_color == CRYSTAL_COLOR_GREEN) mCompleteScore+=(10*0.1f*mTotalCombo)+10;
+                            else if(crystal->_color == CRYSTAL_COLOR_RED) mCompleteScore+=(30*0.1f*mTotalCombo)+30;
+                            else if(crystal->_color == CRYSTAL_COLOR_YELLOW) mCompleteScore+=(50*0.1f*mTotalCombo)+50;    	
+                        }else{
+                        	if(crystal->_color == CRYSTAL_COLOR_BLUE) mCompleteScore+=20;
+                            else if(crystal->_color == CRYSTAL_COLOR_GREEN) mCompleteScore+=10;
+                            else if(crystal->_color == CRYSTAL_COLOR_RED) mCompleteScore+=30;
+                            else if(crystal->_color == CRYSTAL_COLOR_YELLOW) mCompleteScore+=50;
+                        }
+                        
                         if(mAttackFunctionalActive)
                         {
                             if(crystal->_color == CRYSTAL_COLOR_BLUE) {
@@ -9399,6 +9454,25 @@ void GameScene::updateDwarfs(float delta)
                 }
                 }
                 
+                if(mCurrentMission.Task_type == MissionType_DwarfSave || mCurrentMission.Task_type == MissionType_DestroyTotem)
+                {
+                	if(_mission_SaveDwarfs_Left<=0)
+                	{
+
+    				std::vector<int> spellsToSpanw = User::getInstance()->getItemDataManager().getActiveItems();
+    				if(spellsToSpanw.size() >= 1)
+            		{
+    				GameItem_PowerUp* Bee = GameItem_PowerUp::create(this,spellsToSpanw[mCurrentActiveSpell],mCurrentMission.PowerTimeOnMap);
+            		//addSpellBullet();
+            		
+            		CCDelayTime* lastSpellDelay = CCDelayTime::create(3.0f);
+        			CCCallFuncN* spellFunc = CCCallFuncN::create(this, callfuncN_selector(GameScene::addSpellBullet));
+        			CCSequence* aSeqSpell = CCSequence::create(lastSpellDelay,spellFunc,NULL);
+        			runAction(aSeqSpell);
+            		}
+                	}	
+                }
+                
                 if(mCurrentMission.Task_type == MissionType_TEST)
 				{
                     if(mTask_SurviveLives <= 0) //if(mCurrentMission.Task_SurviveLives <=0)
@@ -9453,9 +9527,15 @@ void GameScene::updateDwarfs(float delta)
             	_dwarfsLostLabel->setString(theDwarfsLost.str().c_str());
             	}
             	
+            	std::stringstream thePoints;
+            	thePoints << mCompleteScore;
+            	_pointsCountLabel->setString(thePoints.str().c_str());
+            	
 				EnemyLineCount = mCurrentMission._EnemyLines;
 				mtSnipe = mCurrentMission.MT_Snipe;
 				mtSnipeDelay = mCurrentMission.MT_Snipe_Delay;
+				
+				UpdateBattleLabel();
 				
 				// checks if diamond is picked up
                 for (int diamondIndex = _diamonds->count() - 1; diamondIndex >= 0; --diamondIndex)
@@ -10634,8 +10714,17 @@ void GameScene::showWinScreen()
     _pointLabel->setPosition(ccp(aScoreBoard->getContentSize().width/2,aScoreBoard->getContentSize().height/2+35));//27
     aScoreBoard->addChild(_pointLabel);
     
+    if(_SaveDwarfsCounter>0 && _dwarves->count()+1>1)
+    {
+    	mCompleteScore += (_SaveDwarfsCounter + _dwarves->count())*100*2;
+    }else if (_SaveDwarfsCounter>0){
+    	mCompleteScore += _SaveDwarfsCounter*100*2;
+    }else if (_dwarves->count()+1>1){
+    	mCompleteScore += _dwarves->count()*100*2;
+    }
+    
     std::stringstream missionPoints;
-    missionPoints << mMasterTroll_Attack;
+    missionPoints << mCompleteScore;
     _pointLabel->setString(missionPoints.str().c_str());
     
     //Add mission status
@@ -10657,12 +10746,12 @@ void GameScene::showWinScreen()
     cStar->setPosition(ccp(mGeneralScreen->getContentSize().width/2.0f,mGeneralScreen->getContentSize().height/2-40));//1,2
     addChild(cStar,kHUD_Z_Order+1);
     
-    if(_missionCurrentValue>=_mission_star_points_1 && _missionCurrentValue<_mission_star_points_2){
+    if(mCompleteScore>=_mission_star_points_1 && _missionCurrentValue<_mission_star_points_2){
     	CCSprite* aStarGlow = CCSprite::create("Interfeiss/endgame_screen/New/Star_On.png");
     	aStarGlow->setPosition(ccp(mGeneralScreen->getContentSize().width/3.2f,mGeneralScreen->getContentSize().height/2-40));
     	addChild(aStarGlow,kHUD_Z_Order+1);
     }
-	if(_missionCurrentValue>=_mission_star_points_2 && _missionCurrentValue<_mission_star_points_3)
+	if(mCompleteScore>=_mission_star_points_2 && _missionCurrentValue<_mission_star_points_3)
     {
     	CCSprite* aStarGlow = CCSprite::create("Interfeiss/endgame_screen/New/Star_On.png");
     	aStarGlow->setPosition(ccp(mGeneralScreen->getContentSize().width/3.2f,mGeneralScreen->getContentSize().height/2-40));
@@ -10672,7 +10761,7 @@ void GameScene::showWinScreen()
     	bStarGlow->setPosition(ccp(mGeneralScreen->getContentSize().width/1.4f-20,mGeneralScreen->getContentSize().height/2-40));
     	addChild(bStarGlow,kHUD_Z_Order+1);
     }
-	if(_missionCurrentValue>=_mission_star_points_3)
+	if(mCompleteScore>=_mission_star_points_3)
     {
     	CCSprite* aStarGlow = CCSprite::create("Interfeiss/endgame_screen/New/Star_On.png");
     	aStarGlow->setPosition(ccp(mGeneralScreen->getContentSize().width/3.2f,mGeneralScreen->getContentSize().height/2-40));
@@ -11288,7 +11377,7 @@ void GameScene::generateDwarfMission(bool theInstant)
     {
         if(_mission_SaveDwarfs_Left<=0){
             // Check if dwarfs on map are 0
-            if(_dwarves->count()+1<= 1 && _missionCurrentValue<_mission_star_points_1)
+            if(_dwarves->count()+1<= 1)// && _missionCurrentValue<_mission_star_points_1
             {
                 if(getChildByTag(5544) != NULL){
                     return;// Do not come here !!!
@@ -11390,6 +11479,9 @@ void GameScene::generateDwarfMission(bool theInstant)
 //    }
     
     Dwarf* dwarf = Dwarf::create(this,theType);
+    CCLog("Instant? Ruukis");
+    //newInstantDwarfIsSpawn = false;
+    //newDwarfIsSpawn = true;
     /*
 	if(mCurrentMission.Task_type == MissionType_DwarfSave || mCurrentMission.Task_type == MissionType_DestroyTotem)
 	{
@@ -11436,6 +11528,8 @@ void GameScene::generateDwarfMission(bool theInstant)
     
     dwarf->setAngle(generatePoint.angle);
     
+    //newDwarfIsSpawn = false;
+    
     this->addChild(dwarf, getSpriteOrderZ(dwarf->getPositionY()));
     _dwarves->addObject(dwarf);
     
@@ -11461,6 +11555,8 @@ void GameScene::generateDwarfMission(bool theInstant)
 //    dwarf->setVisible(false);
     
     if(theInstant){
+    	//newDwarfIsSpawn = false;
+    	//newInstantDwarfIsSpawn = true;
         dwarf->_disabled = false;
         return;
     }
@@ -11810,7 +11906,7 @@ Dwarf* GameScene::generateDwarf(int theType,int theSpawnPoint)
 //	if (_dwarves->count() < MAX_DWARFS && _dwarfTimer>3)
 	{
         _dwarfTimer = 0;//Safe 3 seconds
-        
+        CCLog("3sec ruukis");
 		Dwarf* dwarf = Dwarf::create(this,theType);
         
         //Create the possible spawn points,except last one
@@ -11893,6 +11989,8 @@ Dwarf* GameScene::generateDwarf(int theType,int theSpawnPoint)
         
 //        GeneratePoint generatePoint = _genearetPoints[_lastSpawnPoint];
         GeneratePoint generatePoint = _genearetPoints[aIndexPos];
+        
+        GeneratePointIndex = aIndexPos;
 		
 		dwarf->setPosition(generatePoint.x,generatePoint.y);
 		
@@ -13307,41 +13405,70 @@ CCPoint GameScene::getRandomPointFromBlock(int theID)
 
 void GameScene::addSpellBullet()
 {
+	if (doItOnce == false)
+	{
 	//playInGameSound("dwarf_freeze");
-	int dwarfIndex = _dwarves->count() - 1; 
-	for (int generateIndex = _possibleGeneratePoints.size();generateIndex>=0;--generateIndex)//some serious rocket science
+	
+	//int dwarfIndex = _dwarves->count() - 1; 
+	
+	/*
+	Dwarf* dwarf = static_cast<Dwarf*>(_dwarves->objectAtIndex(dwarfIndex));
+	addSpellDwarf = dwarf;
+	//finishSpellBullet();
+	if (newDwarfIsSpawn == true)
+	{
+	CCLog("3Sec pieskirsana");
+	newDwarfIsSpawn = false;
+	CCDelayTime* aControlDelay = CCDelayTime::create(3.0f);
+	CCCallFuncN* aFunction = CCCallFuncN::create(this, callfuncN_selector(GameScene::finishSpellBullet));
+    CCSequence* aSequence = CCSequence::create(aControlDelay,aFunction,NULL);
+    runAction(aSequence);
+    
+    }else if (newInstantDwarfIsSpawn == true){
+    CCLog("Instant pieskirsana");
+    newInstantDwarfIsSpawn = false;	
+    CCDelayTime* aControlDelay = CCDelayTime::create(0.0f);
+	CCCallFuncN* aFunction = CCCallFuncN::create(this, callfuncN_selector(GameScene::finishSpellBullet));
+    CCSequence* aSequence = CCSequence::create(aControlDelay,aFunction,NULL);
+    runAction(aSequence);
+    	
+    }
+	*/
+	if(_mission_SaveDwarfs_Left<=0)
     {
-				
+    	doItOnce = true;
+    	int dwarfIndex = _dwarves->count() - 1;
 		Dwarf* dwarf = static_cast<Dwarf*>(_dwarves->objectAtIndex(dwarfIndex));
+		addSpellDwarf = dwarf;
 	
-		GeneratePoint generatePoint = _genearetPoints[generateIndex];
-		
-		float theDistance2 = sqrtf((generatePoint.x - dwarf->getPositionX())*(generatePoint.x-dwarf->getPositionX()) +
-                                                       (generatePoint.y-dwarf->getPositionY())*(generatePoint.y-dwarf->getPositionY()));
-		
-		if(theDistance2 <=130)
-		{
-    		dwarfIndex -= 1;
-    		if(dwarfIndex <=1)
-    		{
-    			addSpellDwarf = NULL;
-    			break;	
-			}
-    	}else{
-    		addSpellDwarf = dwarf;
-    		break;
-    		//if(generateIndex <=0)
-    	//	{
-    	//		break;	
-		//	}
-    	}
+		CCCallFuncN* aFunction = CCCallFuncN::create(this, callfuncN_selector(GameScene::finishSpellBullet));
+    	CCSequence* aSequence = CCSequence::create(aFunction,NULL);
+    	runAction(aSequence);	
+    }else{
+		CCLog("Spawing dwarf for spell");
+		greenLight = true;
+		generateDwarfMission(false);
+		greenLight = false;
+		int dwarfIndex = _dwarves->count() - 1;//New dwarf will be right for spell 
+		Dwarf* dwarf = static_cast<Dwarf*>(_dwarves->objectAtIndex(dwarfIndex));
+		addSpellDwarf = dwarf;
+	
+		CCDelayTime* aControlDelay = CCDelayTime::create(3.5f);
+		CCCallFuncN* aFunction = CCCallFuncN::create(this, callfuncN_selector(GameScene::finishSpellBullet));
+    	CCSequence* aSequence = CCSequence::create(aControlDelay,aFunction,NULL);
+    	runAction(aSequence);	
 	}
-	
+  }
+}
+
+void GameScene::finishSpellBullet()
+{
 	if(addSpellDwarf == NULL)
 	{
 		
 	}else{
-	CCSprite* spellBullet = CCSprite::create("small_dot_blue.png");
+	setMasterTrollIdle();	
+	spellBullet = CCSprite::create("small_dot_blue.png");
 	spellBullet->setTag(98712);
     spellBullet->setPosition(ccp(_MasterDwarfBase->getPositionX(),_MasterDwarfBase->getPositionY()));
             		
@@ -13350,35 +13477,42 @@ void GameScene::addSpellBullet()
             		
 	CCRepeatForever* aRepeat = CCRepeatForever::create(CCMoveTo);
     spellBullet->runAction(aRepeat);
-    
-    CCCallFuncN* aFunction = CCCallFuncN::create(this, callfuncN_selector(GameScene::finishSpellBullet));
-    CCSequence* aSequence = CCSequence::create(CCMoveTo,aFunction,NULL);
-    spellBullet->runAction(aSequence);
-            		
+       		
     //CCParticleSystemQuad* p = CCParticleSystemQuad::create("Particles/bullet_part.plist");
     //p->setPosition(ccp(spellBullet->getContentSize().width/2,spellBullet->getContentSize().height/2));
     //p->setAutoRemoveOnFinish(true);
     //spellBullet->addChild(p);
     //_spellBulletsOnMap->addObject(spellBullet);        		
     addChild(spellBullet);
-	}
+
+	CCDelayTime* removeDelay = CCDelayTime::create(0.3f);
+	CCCallFuncN* aRemoveFunction = CCCallFuncN::create(this, callfuncN_selector(GameScene::removeSpellchild));
+    CCSequence* aRemoveSequence = CCSequence::create(removeDelay,aRemoveFunction,NULL);
+    runAction(aRemoveSequence);	
+	}			
 }
 
-void GameScene::finishSpellBullet()
+void GameScene::removeSpellchild()
 {
-	//int dwarfIndex = _dwarves->count() - 2; 
-	removeChildByTag(98712);			
-	//Dwarf* dwarf = static_cast<Dwarf*>(_dwarves->objectAtIndex(dwarfIndex));
+	//float theSpellDistance = ccpDistanceSQ(addSpellDwarf->getPosition(), spellBullet->getPosition());
 	
-    for(int otherIndex = _powersOnMap->count()-1;otherIndex>=0;--otherIndex)
+	removeChildByTag(98712);
+	
+	if(_mission_SaveDwarfs_Left<=0)
+	{
+		addSpellDwarf->setPowerButton(101);
+	}
+	
+	 for(int otherIndex = _powersOnMap->count()-1;otherIndex>=0;--otherIndex)
     {
-    GameItem_PowerUp* bee = static_cast<GameItem_PowerUp*>(_powersOnMap->objectAtIndex(otherIndex));
+	GameItem_PowerUp* bee = static_cast<GameItem_PowerUp*>(_powersOnMap->objectAtIndex(otherIndex));
     if (bee->mPowerID >= 100)
 		{            
     	addSpellDwarf->setPowerButton(bee->mPowerID);
-    	bee->onRemove();			
+    	bee->onRemove();
+		//removeChildByTag(98712);			
     	}
-	}			
+	}
 }
 
 void GameScene::showRemovableEffects()
@@ -17702,12 +17836,19 @@ void GameScene::UpdateBullets(float delta)
                 if (dwarf)
                 {
                     if (ccpDistanceSQ(dwarf->getPosition(), troll->getPosition()) <= 1000)
-                    {	
+                    {
+						//CCLog("so far this works22");	
                         if(troll != NULL && troll->_dwarf != NULL && troll->_dwarf->getChildByTag(MT_BULLET_ID) != NULL){
                             troll->_dwarf->removeChildByTag(MT_BULLET_ID);
                         }
-                        
+                        //CCLog("so far this works");
                         troll->OnDoAction(dwarf);
+                        
+    					int otherIndex = _otherEnemy->count()-1;//Really, for now.
+    					if (otherIndex >= 0)
+    					{
+                        dwarf->removeFromSave();
+                        }
                         
                         //gameover for other dwarf !!!
 //                        troll->_isDisabled = true;
@@ -17719,6 +17860,66 @@ void GameScene::UpdateBullets(float delta)
             }
         }
     }
+}
+
+void GameScene::UpdateSting(float delta)
+{
+	
+    //    CCLOG("Bullet amount 2: %f",_bullets->count());
+    
+    // update trolls
+    for (int stingIndex = _stings->count() - 1; stingIndex >= 0; --stingIndex)
+    {
+        TrollBullet* DDD = static_cast<TrollBullet*>(_stings->objectAtIndex(stingIndex));
+        if(DDD!= NULL)
+        {
+        DDD->update(delta);
+        }else{
+        	
+        }
+        //Check if does not hit other dwarf !!!
+        if(DDD != NULL)
+        {
+            for (int dwarfIndex = _dwarves->count() - 1; dwarfIndex >= 0; --dwarfIndex)
+            {
+                Dwarf* dwarf = static_cast<Dwarf*>(_dwarves->objectAtIndex(dwarfIndex));
+                
+                //**********************************
+                //Simple z-sorting =D
+                
+                if (dwarf)
+                {
+                    if (ccpDistanceSQ(dwarf->getPosition(), DDD->getPosition()) <= 1000)
+                    {
+						//CCLog("so far this works22");	
+                        if(DDD != NULL && DDD->_dwarf != NULL && DDD->_dwarf->getChildByTag(MT_BULLET_ID) != NULL){
+                            DDD->_dwarf->removeChildByTag(MT_BULLET_ID);
+                        }
+                        //CCLog("so far this works");
+                        DDD->OnDoAction(dwarf);
+            			
+    					int otherIndex = _otherEnemy->count()-1;//Really, for now.
+    					if (otherIndex >= 0)
+    					{
+                        dwarf->removeFromSave();
+                        }
+                        
+                        this->removeChild(DDD);
+            			_stings->removeObjectAtIndex(stingIndex);
+            			CCLOG("Removed Bullet");
+            			DDD = NULL;
+                        
+                        //gameover for other dwarf !!!
+//                        troll->_isDisabled = true;
+//                        dwarf->_knockOutTime = 3;
+//                        dwarf->_knockOut = true;
+//                        dwarf->createCrash();
+                    }
+                }
+            }
+        }
+    }
+    
 }
 
 void GameScene::StartTrollFreeze()
@@ -18212,11 +18413,24 @@ void GameScene::UpdateBattleLabel()
     else if(mDwarfCollectMachine)
     {
 //        if(mMasterTroll_Attack>=mCurrentMission.MT_Battle_Attack) // New stuff - dynamic
+		if(_mission_SaveDwarfs_Left<=0)
+        {
+    		//std::vector<int> spellsToSpanw = User::getInstance()->getItemDataManager().getActiveItems();
+    		//if(spellsToSpanw.size() >= 1)
+            //{
+    		//GameItem_PowerUp* Bee = GameItem_PowerUp::create(this,spellsToSpanw[mCurrentActiveSpell],mCurrentMission.PowerTimeOnMap);
+            //addSpellBullet();
+            //}
+        }else{
+        	doItOnce = false;//If Player click`s Save Me
+        }
+
         if(mMasterTroll_Attack>=mCurrentSpellCharge)
         {
             // Remove the amount and spawn some item near enterances?
-            CCLOG("Create item near cave for troll attack");
-            
+            //CLOG("Create item near cave for troll attack");
+    
+            //SetDwarfKingAnimation("Spell2");
             // What power will it be?
             
             // Spawn the shop active object !!!
@@ -18261,34 +18475,64 @@ void GameScene::UpdateBattleLabel()
             // Do this only if spell is selected in shop
             if(spellsToSpanw.size() >= 1)
             {
+            		
             	if(mCurrentMission.Task_type == MissionType_DwarfSave || mCurrentMission.Task_type == MissionType_DestroyTotem)
 				{
-                // For now random item choose?
+					//SetDwarfKingAnimation("Spell1");
+					
+					//if(newDwarfIsSpawn == true || newInstantDwarfIsSpawn == true)
+					//{
+                	// For now random item choose?
                 
-                // Choose what is active !!!
-                /*
-                int theIndexOfSpell = rand()%spellsToSpanw.size();
-                CCLog("Will spanw spell ID [%i]",spellsToSpanw[theIndexOfSpell]);
-                */
+                	// Choose what is active !!!
+                	/*
+                	int theIndexOfSpell = rand()%spellsToSpanw.size();
+                	CCLog("Will spanw spell ID [%i]",spellsToSpanw[theIndexOfSpell]);
+                	*/
                 
-                GameItem_PowerUp* Bee = GameItem_PowerUp::create(this,spellsToSpanw[mCurrentActiveSpell],mCurrentMission.PowerTimeOnMap);
+                	GameItem_PowerUp* Bee = GameItem_PowerUp::create(this,spellsToSpanw[mCurrentActiveSpell],mCurrentMission.PowerTimeOnMap);
+                	if(_mission_SaveDwarfs_Left<=0)
+        			{
+                	
+                	}else{
+                		SetDwarfKingAnimation("Spell1");
+                	}
+                	//CCDelayTime* beforeShot = CCDelayTime::create(0.0f);
+                	CCDelayTime* spellAnimationDelay = CCDelayTime::create(0.0f);
+        			CCCallFuncN* shotFunc = CCCallFuncN::create(this, callfuncN_selector(GameScene::addSpellBullet));
+        			CCSequence* aSeqShot = CCSequence::create(spellAnimationDelay,shotFunc,NULL);
+        			runAction(aSeqShot);
+        			//SetDwarfKingAnimation("Idle");//set DwarfKing animation to default.
+                	/*
+					if(newInstantDwarfIsSpawn == true)
+                	{
+                		CCCallFuncN* shotFunc = CCCallFuncN::create(this, callfuncN_selector(GameScene::setMasterTrollIdle));
+        				CCSequence* aSeqShot = CCSequence::create(shotFunc,NULL);
+        				runAction(aSeqShot);
+                	}else{
+                		CCDelayTime* idleDelay = CCDelayTime::create(3.0f);
+                		CCCallFuncN* shotFunc = CCCallFuncN::create(this, callfuncN_selector(GameScene::setMasterTrollIdle));
+        				CCSequence* aSeqShot = CCSequence::create(shotFunc,NULL);
+        				runAction(aSeqShot);
+                	}
+					*/
+					mMasterTroll_Attack = 0;
                 
-                SetDwarfKingAnimation("Spell2");//set DwarfKing animation and shot bullet 
+                	//newDwarfIsSpawn = false;
+                	// Spawn near cave ???
+                	CCPoint spawnSpot;
                 
-                // Spawn near cave ???
-                CCPoint spawnSpot;
-                
-                // Check if mission does not have some precise cords for spawn !!!
+                	// Check if mission does not have some precise cords for spawn !!!
               
-				if(mCurrentMission.SpellSpawnPoints.size()>0)
-                {
+					if(mCurrentMission.SpellSpawnPoints.size()>0)
+                	{
                     // Do the forced stuff
                     int theSpawnRandomSpot = rand()%(mCurrentMission.SpellSpawnPoints.size()/2);
                     spawnSpot.x = mCurrentMission.SpellSpawnPoints[theSpawnRandomSpot*2];
                     spawnSpot.y = mCurrentMission.SpellSpawnPoints[theSpawnRandomSpot*2+1];
-                }
-                else
-                {
+                	}
+                	else
+                	{
                     // The offset from cave center
                     int aCaveOff_X = (rand()%50+50);
                     int aCaveOff_Y = (rand()%50+50);
@@ -18348,10 +18592,14 @@ void GameScene::UpdateBattleLabel()
                 Bee->setVisible(false);
                 this->addChild(Bee, getSpriteOrderZ(Bee->getPositionY()));
                 _powersOnMap->addObject(Bee);
-            	}
+            	//}
+              }
             }
             
-            mMasterTroll_Attack = 0;//Reset to 0
+            //mMasterTroll_Attack = 0;//Reset to 0
+        }else{
+        	newDwarfIsSpawn = false;
+        	newInstantDwarfIsSpawn = false;
         }
     }
 	}
@@ -18393,6 +18641,11 @@ void GameScene::UpdateBattleLabel()
         addChild(aDummyBullet);
     }
     */
+}
+
+void GameScene::setMasterTrollIdle()
+{
+	SetDwarfKingAnimation("Idle");
 }
 
 void GameScene::OnAttackHitMachine(CCNode* sender)

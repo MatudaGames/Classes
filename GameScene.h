@@ -246,6 +246,8 @@ public:
     
     // Even more new stuff
     bool mDwarfCollectMachine;
+    //For score
+    int mCompleteScore;
     
     int EnemyLineCount;
     
@@ -318,6 +320,8 @@ public:
     
     int mCombo_DwarfEnter;
     float mComboTimer_DwarfEnter;
+    
+    float theDistanceFromStart;
     
     //Snipe stuff
     
@@ -397,6 +401,7 @@ public:
     
     cocos2d::CCSprite* _debugSprite1;
     cocos2d::CCSprite* _debugSprite2;
+    cocos2d::CCSprite* spellBullet;
     
     int mMaxBarPoints;
     int mTotalPointsInGame;
@@ -406,6 +411,14 @@ public:
     int mTrollDwarfCounter;
     
     double mTrollBulletTimer;
+    
+    //for checking, what kind a dwarf spawn
+    bool newDwarfIsSpawn;
+    bool newInstantDwarfIsSpawn;
+    bool doItOnce;
+    bool greenLight;
+    void setMasterTrollIdle();
+    void removeSpellchild();
     
     void OnCompletedMission16();
     void SetMasterTrollAction(int theType);
@@ -596,7 +609,9 @@ public:
     
     //The new fellas
 //    cocos2d::CCSprite* _MasterTrollBase;
-//    cocos2d::CCSprite* _MasterDwarfBase;
+    //cocos2d::CCSprite* _MasterDwarfBase;
+    
+    int GeneratePointIndex;
     
     MasterTroll* _MasterTrollBase;
     MasterDwarf* _MasterDwarfBase;
@@ -969,6 +984,7 @@ public:
     cocos2d::CCArray* _crystals;
     cocos2d::CCArray* _effects;
     cocos2d::CCArray* _diamonds;
+    cocos2d::CCArray* _stings;
 //    cocos2d::CCArray* _mushrooms;
     
     void OnCaveBlueOpen();
@@ -1098,6 +1114,7 @@ private:
     int mTutorialSubStep;
     
     void UpdateBullets(float delta);
+    void UpdateSting(float delta);
     
     cocos2d::CCArray* _tornadoActive;
 	
@@ -1196,6 +1213,7 @@ private:
     cocos2d::CCLabelTTF* _timeLabel;
     cocos2d::CCLabelTTF* _lifesLabel;
     cocos2d::CCLabelTTF* _pointLabel;
+    cocos2d::CCLabelTTF* _pointsCountLabel;
     
     cocos2d::CCSprite* mMissionStatus;
     

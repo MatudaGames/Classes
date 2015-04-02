@@ -14,6 +14,7 @@
 #include "AppMacros.h"
 #include "Utils.h"
 #include "User.h"
+#include "Sting.h"
 
 #include "GameTutorial.h"
 
@@ -77,7 +78,7 @@ bool Enemy_Bee::init(GameScene* game)
     
     beeWillShoot = false;
     
-    canMove = true;
+    canMove = false;
     
     _movingToFinish = true;
     _speed = 10;
@@ -85,6 +86,8 @@ bool Enemy_Bee::init(GameScene* game)
     bulletCount = 0;
     _beeIdleBeforeFire = 0;
     bullet_speed = 1;
+    
+    mFreezedTime = 0;
     
     _bulletArr = CCArray::create();
     _bulletArr->retain();
@@ -125,6 +128,29 @@ bool Enemy_Bee::init(GameScene* game)
 void Enemy_Bee::update(float delta)
 {
 //    CCLog("Update bee");
+
+	    if(mFreezedTime>0){
+        
+        //if(_animation->numberOfRunningActions()>0){
+            _animation->pauseSchedulerAndActions();
+            canMove = true;
+       // }
+        
+        // Runs timer while ice melts down
+        mFreezedTime -= delta;
+        
+        if(mFreezedTime<1){
+            //We are unfreezing
+            mFreezedTime = 0;
+            canMove = false;
+            _animation->resumeSchedulerAndActions();
+            
+            _animation->setColor(ccc3(255,255,255));
+        
+        }
+        
+        return;
+    }
     
     // Check if did get to final place !!!
     if(!_allCreated)return;
@@ -227,7 +253,7 @@ void Enemy_Bee::update(float delta)
     CCPoint point = _movePoints->getControlPointAtIndex(mMoveIndex);
     CCPoint point2 = _movePoints->getControlPointAtIndex(mMoveIndex2);
     CCPoint point3 = _movePoints->getControlPointAtIndex(mMoveIndex3+1);
-    
+    /*
     for (int bulletIndex = _bulletArr->count() - 1; bulletIndex >= 0; --bulletIndex)
             {
                 CCSprite* _bullet = static_cast<CCSprite*>(_bulletArr->objectAtIndex(bulletIndex));
@@ -238,9 +264,10 @@ void Enemy_Bee::update(float delta)
                     _bullet = NULL;
                 	}			
             }
-	
-	if (ccpDistanceSQ(point, getPosition()) <= 800)
+	*/
+	if (ccpDistanceSQ(point, getPosition()) <= 1001)//800
     {
+    	CCLog("IzpildasS");
         if(_moveInCircle){
             if(mMoveClock){
                 mMoveIndex--;
@@ -255,6 +282,7 @@ void Enemy_Bee::update(float delta)
         }
         else{
             mMoveIndex+=_moveValue;
+            CCLog("MoveIndex %i", mMoveIndex);
             if(mMoveIndex<0){
                 mMoveIndex = 1;
                 _moveValue = 1;
@@ -295,6 +323,7 @@ void Enemy_Bee::update(float delta)
     }
     else
     {
+    	//CCLog("Else izpildas");
         setAngle(atan2f(point.y - y, point.x - x));
     }
     
@@ -310,6 +339,7 @@ void Enemy_Bee::update(float delta)
             CCSprite* aBullet = CCSprite::create("Characters/bee/dzelonis2.png");
             aBullet->setPosition(ccp(getPositionX()+5, getPositionY()+5));
             CCMoveTo* aMoveBy;
+            CCRotateTo* aRotateTo;
             aBullet->setFlipX(!_animation->isFlipX());
             /*
 			if(!_animation->isFlipX()){
@@ -367,61 +397,97 @@ void Enemy_Bee::update(float delta)
             */
             //int pozicija = getPositionX() - 100;
 			//int DRR = aCurrentAngle*(-3);
-			 if(Dir == mLastDir)
-            {
-                if(Dir == 1)
-                    Dir = 2;
-                else
-                    Dir = 1;
-            }
-			int AngleDir = 0;
-         	if(Dir == 2){
-            	aMoveBy = CCMoveTo::create(1.0f,ccp(point2.x, point2.y));
-            	//int deltaY = getPositionY() - point2.y;
-				//int deltaX = getPositionX() - point2.x;
-				//int angleInDegrees = atan2(deltaY, deltaX)/ M_PI*180+180;
-				int aCurrentAnglee = (-_angle * 180.0 / M_PI)+coneWidth/2;
-				aCurrentAnglee += 180;
-				AngleDir = aCurrentAnglee;
-				aBullet->setRotation(aCurrentAnglee);
-				aBullet->setFlipY(true);
+			// if(Dir == mLastDir)
+           // {
+           //     if(Dir == 1)
+           //         Dir = 2;
+           //     else
+           //         Dir = 1;
+           // }
+		//	int AngleDir = 0;
+         //	if(Dir == 2){
+            	//aMoveBy = CCMoveTo::create(1.0f,ccp(point2.x, point2.y));
+        
+            	//Sting* dzelonnis = Sting::create(_game,14);
+        		//dzelonnis->setPosition(100,100);
+        		//dzelonnis->_speed = 120;
+        		//dzelonnis->_speedMax = 120;
+        		//dzelonnis->_speedAddValue = (dzelonnis->_speedMax-dzelonnis->_speed)*0.1;
+        		//dzelonnis->setScale(0.7f);
+        		
+        		
+        		
+        		//bBullet->setAngle(5.8);//90,90 //5.8
+            	int aCurrentAnglee = (-_angle * 180.0 / M_PI)+coneWidth/2;
+				
+				Sting* bBullet = Sting::create(_game,14,aCurrentAnglee);
+    			bBullet->setPosition(ccp(getPositionX()+5, getPositionY()+5));
+    			bBullet->_speed = bullet_speed;
+    			bBullet->_speedMax = bullet_speed;
+    			bBullet->_speedAddValue = 0;
+				//bBullet->_straightCords = point;
+				bBullet->setAngle(atan2f(point.y - getPositionY()+5, point.x - getPositionX()+5));
+        		//bBullet->_straightCords.setPoint(point.x,point.y);
+				bBullet->setVisible(true);
+			
+    			//aBullet->_distanceActive = theLife;
+    			//aBullet->_angle = theAngle;//atanhf(30);
+    
+    			_game->addChild(bBullet);
+    			_game->_stings->addObject(bBullet);
+	
+				//CreateBullet(aCurrentAngle);
+				//aCurrentAnglee += 180;
+				//AngleDir = aCurrentAnglee;
+				//aBullet->setRotation(aCurrentAnglee);
+				//aBullet->setFlipY(true);
 				//Dir = 2;	
-            }
-            else if (Dir == 1) {
-                aMoveBy = CCMoveTo::create(1.0f,ccp(point3.x, point3.y));
+          //  }
+           // else if (Dir == 1) {
+          // / 	
+          //  	int aCurrentAnglee = (-_angle * 180.0 / M_PI)+coneWidth/2;
+		//		CreateBullet(aCurrentAnglee);
+                //aMoveBy = CCMoveTo::create(1.0f,ccp(point3.x, point3.y));
                 //int deltaY = getPositionY() - point2.y;
 				//int deltaX = getPositionX() - point2.x;
 				//int angleInDegreess = atan2(deltaY, deltaX)/ M_PI*180;
-				int cCurrentAnglee = (-_angle * 180.0 / M_PI)+coneWidth/2;
-				AngleDir+=180;
-                aBullet->setRotation(cCurrentAnglee);
-                aBullet->setFlipY(true);
+				//int cCurrentAnglee = (-_angle * 180.0 / M_PI)+coneWidth/2;
+				//AngleDir+=180;
+                ///aBullet->setRotation(cCurrentAnglee);
+                //aBullet->setFlipY(true);
                 //Dir = 1;
-            }
+          //  }
             
-            mLastDir = Dir;
+           // mLastDir = Dir;
             //Where will it move???
             
-            CCRepeatForever* aRepeat = CCRepeatForever::create(aMoveBy);
-            aBullet->runAction(aRepeat);
+            //CCRepeatForever* aRepeat = CCRepeatForever::create(aMoveBy);
+            //aBullet->runAction(aRepeat);
            
-            _bulletArr->addObject(aBullet);
+            //_bulletArr->addObject(aBullet);
             canMove = true;
-            _game->addChild(aBullet);
+            //_game->addChild(aBullet);
             //beeWillShoot = false;
+            
+            //float Angliitis = bBullet->GetAngle();
+			//	CCLog("Angliitis %f", Angliitis);
+			//	CreateBullet(Angliitis);
         	
         	CCDelayTime* aDelay = CCDelayTime::create(2.0f);
             CCCallFuncN* func = CCCallFuncN::create(this, callfuncN_selector(Enemy_Bee::letsMove));
             CCSequence* aSeq1 = CCSequence::create(aDelay,func,NULL);
             runAction(aSeq1);
         	
-        	CCLog("Play music [bulletCount]:%i",bulletCount);
+        	//CCLog("Play music [bulletCount]:%i",bulletCount);
         }
 
         return;
     }
     
      mGULGUL = 0;
+     //CCLog("Freeze time: %i",mFreezedTime);
+         // Can't move and do stuff - dwarfs only hit back
+
 	if(canMove==false)
 	{
     CCPoint point2 = _movePoints->getControlPointAtIndex(mGULGUL);
@@ -627,6 +693,21 @@ void Enemy_Bee::setAngle(float value)
     		setAnimation(_shootDownAnimation);	
     	}
    }
+}
+
+void Enemy_Bee::CreateBullet(int theAngle)
+{
+	Sting* aBullet = Sting::create(_game,14,theAngle);
+    aBullet->setPosition(ccp(getPositionX()+5, getPositionY()+5));
+    aBullet->_speed = bullet_speed;
+    aBullet->_speedMax = bullet_speed;
+    aBullet->_speedAddValue = 0;
+	//aBullet->_dwarf = dwarf;
+    //aBullet->_distanceActive = theLife;
+	aBullet->_angle = theAngle;//atanhf(30);
+    
+    _game->addChild(aBullet);
+    _game->_bullets->addObject(aBullet);
 }
 
 void Enemy_Bee::setAnimation(SpriteAnimation* animation)
@@ -851,6 +932,13 @@ void Enemy_Bee::setRadar(int theRadius,int theWidth)
     
     mCatchRadar->setRotation(0);
     */
+}
+
+void Enemy_Bee::removeFromSave()
+{
+	_game->_otherEnemy->removeObject(this);
+    _game->removeNode(this);
+	return;
 }
 
 

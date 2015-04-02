@@ -16,6 +16,7 @@ class GameScene;
 class Effect;
 class SpriteAnimation;
 class Troll;
+class Enemy_Bee;
 
 #define MT_BULLET_ID 344
 
@@ -57,10 +58,12 @@ public:
     
     Troll* mSnapedTroll;
     Troll* mSnapedTroll_FallBack;
+    //Enemy_Bee* mSnapedBee;
     
     bool mSnapedToTotem;
     bool mSnapedToMasterTroll;
     bool mCanSearchForTrollsForSnap;
+    bool mSnapedTest;
     
     int mContainsPowerUp;
     
