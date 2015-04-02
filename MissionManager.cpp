@@ -4684,7 +4684,7 @@ void MissionManager::OnDownloadSpecialMissions()
 //        pFile = fopen(saveFileName.c_str(), "w+");
         pFile = fopen(saveFileName.c_str(), "wb");
         
-        
+//        https://www.dropbox.com/s/0t58p07139vxieb/DF_Missions_TEST.xml?dl=0
         // The test
         curl_easy_setopt(pCurl,CURLOPT_URL,"https://www.dropbox.com/s/0t58p07139vxieb/DF_Missions_TEST.xml?dl=1");
         if(pFile != NULL)

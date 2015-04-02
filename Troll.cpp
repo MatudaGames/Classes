@@ -15,6 +15,7 @@
 #include "Wind.h"
 #include "User.h"
 #include <math.h>
+#include "GameTutorial.h"
 
 USING_NS_CC;
 using namespace CocosDenshion;
@@ -202,6 +203,7 @@ bool Troll::init(GameScene* game)
     _removeSmoke->retain();
 
 	_angle = 6.0f * M_PI / 8.0f;
+    _speed = TROLL_SPEED;
 //	_speed = TROLL_SPEED;
     
     //For debug
@@ -630,6 +632,38 @@ void Troll::update(float delta)
         return;
     }
     
+    // Quick tutorial stuff
+    if(GameTutorial::getInstance()->mTutorialCompleted == false && GameTutorial::getInstance()->mCurrentTutorialStep<TUTORIAL_S1_INTRO)
+    {
+        if(mPatrolPoints)
+        {
+            float x = getPositionX();
+            float y = getPositionY();
+            
+            CCPoint point = mTrollPatrolPoint_1;
+            if(mMoveToControl_1){
+                point = mTrollPatrolPoint_1;
+            }
+            else{
+                point = mTrollPatrolPoint_2;
+            }
+            
+            if (ccpDistanceSQ(point, getPosition()) <= 1000)
+            {
+                mMoveToControl_1 = !mMoveToControl_1;
+            }
+            else
+            {
+                setAngle(atan2f(point.y - y, point.x - x));
+            }
+            
+            CCPoint newPosition = ccp(x + cosf(_angle) * delta * (_speed * _game->getGameSpeed()) * User::getInstance()->mDebugSpeed_troll,
+                                      y + sinf(_angle) * delta * (_speed * _game->getGameSpeed()) * User::getInstance()->mDebugSpeed_troll);
+            cocos2d::CCNode::setPosition(newPosition.x,newPosition.y);
+        }
+        return;
+    }
+    
     // New checks if did not happen to our hereo
     
     // Can't move and do stuff - dwarfs only hit back
@@ -823,7 +857,6 @@ void Troll::update_old(float delta)
         }
         return;
     }
-    
     
     if(_game->_boostNoEnemyTimer>0)
         return;

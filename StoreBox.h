@@ -12,16 +12,22 @@
 #include "Utils.h"
 
 #define BUTTON_ACTION 10
+#define BUTTON_ACTION_2 11
 #define BUTTON_ICON 30
 #define ICON_LOCKED 20
 
 #define POWER_DESC 40
 
-#define UPGRADE_STAR 100
+#define UPGRADE_STAR 200
 
 #define ITEM_PRICE_AMOUNT 101
 #define ITEM_PRICE_TEXT 102
 #define ITEM_PRICE_ICON 103
+
+#define SPELL_STATS_TXT_DAMAGE 301
+#define SPELL_STATS_TXT_RANGE 302
+#define SPELL_STATS_ICON_DAMAGE 303
+#define SPELL_STATS_ICON_RANGE 304
 
 class StoreBox: public cocos2d::CCLayer
 {
@@ -44,6 +50,8 @@ public:
     bool mUpgradesCreated;
     bool mShopCreated;
     bool mFreeStuffCreated;
+    
+    void ScrollToItem();
     
     // Here's a difference. Method 'init' in cocos2d-x returns bool, instead of returning 'id' in cocos2d-iphone
     virtual bool init(cocos2d::CCRect size,cocos2d::CCRect zone);
@@ -107,7 +115,7 @@ public:
     void UnlockNow_Stamp(cocos2d::CCObject *sender);
     void Buy_Stamp(cocos2d::CCObject *sender);
     
-    
+    void OnSpellUpgrade(CCObject* sender);
     void OnSpellClick(CCObject* sender);
     void OnPowerUpClick(CCObject* sender);
     void CheckSpellButtons(bool OnlySpells, bool OnlyPowers);

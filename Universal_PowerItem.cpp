@@ -439,46 +439,46 @@ void Universal_PowerItem::onPlantFallDown(CCNode* sender)
     //Spawn some crystals !!!
     if(mLevel==1)
     {
-        _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+5,this->getPositionY()+sender->getPositionY()+10);
+        _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+5,this->getPositionY()+sender->getPositionY()+10,-1);
     }
     else if(mLevel == 2)
     {
-        _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+10,this->getPositionY()+sender->getPositionY()+14);
-        _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()-10,this->getPositionY()+sender->getPositionY()+8);
+        _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+10,this->getPositionY()+sender->getPositionY()+14,-1);
+        _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()-10,this->getPositionY()+sender->getPositionY()+8,-1);
     }
     else if(mLevel==3)
     {
         if(mCrystalPlant_PlantsFallenDown==0)
         {
-            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX(),this->getPositionY()+sender->getPositionY()+10);
+            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX(),this->getPositionY()+sender->getPositionY()+10,-1);
         }
         else
         {
-            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+10,this->getPositionY()+sender->getPositionY()+14);
-            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()-10,this->getPositionY()+sender->getPositionY()+8);
+            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+10,this->getPositionY()+sender->getPositionY()+14,-1);
+            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()-10,this->getPositionY()+sender->getPositionY()+8,-1);
         }
     }
     else if(mLevel==4)
     {
-        _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+10,this->getPositionY()+sender->getPositionY()+14);
-        _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()-10,this->getPositionY()+sender->getPositionY()+8);
+        _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+10,this->getPositionY()+sender->getPositionY()+14,-1);
+        _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()-10,this->getPositionY()+sender->getPositionY()+8,-1);
     }
     else
     {
         //The ultimate
         if(mCrystalPlant_PlantsFallenDown==0)
         {
-            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+10,this->getPositionY()+sender->getPositionY()+14);
-            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()-10,this->getPositionY()+sender->getPositionY()+8);
+            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+10,this->getPositionY()+sender->getPositionY()+14,-1);
+            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()-10,this->getPositionY()+sender->getPositionY()+8,-1);
         }
         else if(mCrystalPlant_PlantsFallenDown==1)
         {
-            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+10,this->getPositionY()+sender->getPositionY()+14);
-            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()-10,this->getPositionY()+sender->getPositionY()+8);
+            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()+10,this->getPositionY()+sender->getPositionY()+14,-1);
+            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX()-10,this->getPositionY()+sender->getPositionY()+8,-1);
         }
         else
         {
-            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX(),this->getPositionY()+sender->getPositionY()+10);
+            _gameScene->generateCrystalSpecial(this->getPositionX()+sender->getPositionX(),this->getPositionY()+sender->getPositionY()+10,-1);
         }
     }
     

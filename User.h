@@ -8,6 +8,11 @@
 
 #include "ItemDataManager.h"
 
+#define SCENE_LOADING_SCREEN 1
+#define SCENE_WORLD_MAP 2
+
+#define SCENE_COMIC 10
+
 class User
 {
 public:
@@ -216,12 +221,24 @@ public:
     // The new stuff for data management in game power stuff magic - wohooo :D
     std::string mActiveSpells;
     std::string mBoghtSpells;
+    std::string mSpellInfo;
     
     std::string mPowerInfo;
     std::string mBoghtPowers;
     
     // New struff for stats
-    int mCurrentMissionLevel;
+    int mCurrentMissionLevel; // This is the param which informs what is the current max mission unlocked
+    int mWorldMapLastMission;
+    std::string mMissionProgress; // Whats the mission progress
+    
+    std::vector<int> SplitString(const std::string s,char delim);
+    std::vector<std::string> SplitString_VecString(const std::string s,char delim);
+    int GetUserMissionInfo(int theID,int theType);
+    void SaveUserMissionInfo(int theMissionID,int theScore,int theStars); // Just save all the data
+    
+    int mCurrentStartedMission;
+    
+    void SaveUserMissionUnlock();
 	
 private:
 	User();

@@ -11,6 +11,7 @@
 #include "User.h"
 #include "Utils.h"
 #include <algorithm>
+#include "GameTutorial.h"
 
 int CHARGE_DWARF_ENTER_CAVE = 30;
 int CHARGE_CRYSTAL_BLUE = 20;
@@ -235,11 +236,30 @@ void ItemDataManager::OnDownloadedData()
                 
                 aSpellInfo->name = aSubPathValue;
                 aSpellInfo->charge = subDict->valueForKey("Charge")->intValue();
-                aSpellInfo->damage = subDict->valueForKey("Damage")->intValue();
                 aSpellInfo->order_index = subDict->valueForKey("Order_ID")->intValue();
                 
-                aSpellInfo->price_crystals = subDict->valueForKey("Price_Crystals")->intValue();
-                aSpellInfo->price_diamonds = subDict->valueForKey("Price_Diamonds")->intValue();
+                //...........................................................................
+                // Check if this spell does not have upgarde !!!
+                if(subDict->valueForKey("U_Damage")->compare("") != 0)
+                {
+                    // This item is upgradable
+                    aSpellInfo->upgrade_available = true;
+                    
+                    // We have upgarde
+                    aSpellInfo->upgrade_damage = SplitString(subDict->valueForKey("U_Damage")->getCString(),',');
+                    aSpellInfo->upgrade_cost = SplitString_VecString(subDict->valueForKey("U_Cost")->getCString(),',');
+                    
+                    aSpellInfo->max_upgrades = aSpellInfo->upgrade_cost.size();
+                }
+                else
+                {
+                    // If no upgrade - then we show simple data
+                    aSpellInfo->damage = subDict->valueForKey("Damage")->intValue();
+                    aSpellInfo->price_crystals = subDict->valueForKey("Price_Crystals")->intValue();
+                    aSpellInfo->price_diamonds = subDict->valueForKey("Price_Diamonds")->intValue();
+                }
+                
+                //...........................................................................
                 
                 // The spell unocl stuff
                 if(subDict->valueForKey("UnlockInfo")->compare("") != 0)
@@ -407,6 +427,67 @@ bool ItemDataManager::isPowerItemUnlocked(int theID)
     // TODO - check levels
     
     return false;
+}
+
+int ItemDataManager::getSpellItemLevel(int theID)
+{
+    std::vector<std::string> boughtStuff = SplitString_VecString(User::getInstance()->mSpellInfo,',');
+    
+    for(int i=0;i<boughtStuff.size();i++)
+    {
+        //Sub split it more
+        std::vector<int> subPowa = SplitString(boughtStuff[i],'=');
+        if(subPowa.size()>0)
+        {
+            if(subPowa[0] == theID){
+                return subPowa[1];
+            }
+        }
+    }
+    
+    return 0;// As default
+}
+
+void ItemDataManager::upgradeSpellItem(int theID)
+{
+    std::stringstream theSaveData;
+    std::vector<std::string> boughtStuff = SplitString_VecString(User::getInstance()->mSpellInfo,',');
+    
+    CCLog("Save data before spell upgrade: %s",User::getInstance()->mSpellInfo.c_str());
+    
+    bool didFindItemForUpgrade = false;
+    
+    for(int i=0;i<boughtStuff.size();i++)
+    {
+        //Sub split it more
+        std::vector<int> subPowa = SplitString(boughtStuff[i],'=');
+        if(subPowa.size()>0)
+        {
+            if(subPowa[0] == theID){
+                subPowa[1] += 1;
+                didFindItemForUpgrade = true;
+            }
+            
+            theSaveData << subPowa[0] << "=" << subPowa[1] << ",";
+        }
+    }
+    
+    // Add new stuff
+    if(didFindItemForUpgrade == false)
+    {
+        theSaveData<<theID<<"=0,";
+        User::getInstance()->mSpellInfo.append(theSaveData.str().c_str());
+    }
+    else
+    {
+        User::getInstance()->mSpellInfo = theSaveData.str().c_str();
+    }
+    
+    // Save data to local stuff
+    CCLog("Will save data about spells: %s",theSaveData.str().c_str());
+    
+    cocos2d::CCUserDefault::sharedUserDefault()->setStringForKey("Spells_Info", theSaveData.str().c_str());
+    cocos2d::CCUserDefault::sharedUserDefault()->flush();
 }
 
 int ItemDataManager::getPowerItemLevel(int theID)
@@ -578,6 +659,12 @@ void ItemDataManager::onPurchaseItem(int theType,int theID)
         CCLog("CurrentData of spells bought %s",User::getInstance()->mBoghtSpells.c_str());
         
         cocos2d::CCUserDefault::sharedUserDefault()->setStringForKey("Spells_Bought", User::getInstance()->mBoghtSpells.c_str());
+        
+        if (GameTutorial::getInstance()->mTutorialCompleted == false) {
+            if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_WORLD_MAP_STORE_OPEN){
+                GameTutorial::getInstance()->DoStep(TUTORIAL_S2_WORLD_MAP_STORE_SPELL_BOUGHT);
+            }
+        }
     }
     else if(theType == SHOP_POWERS)
     {
@@ -589,8 +676,7 @@ void ItemDataManager::onPurchaseItem(int theType,int theID)
     }
     
     // Save it now on device
-//    cocos2d::CCUserDefault::sharedUserDefault()->setStringForKey("Spells_Bought", User::getInstance()->mBoghtSpells.c_str());
-    cocos2d::CCUserDefault::sharedUserDefault()->flush();
+    cocos2d::CCUserDefault::sharedUserDefault()->flush(); // Disbaled for now !!!
 }
 
 SpellInfo ItemDataManager::getSpellByID(int theID)

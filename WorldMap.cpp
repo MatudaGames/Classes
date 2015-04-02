@@ -7,7 +7,6 @@
 //
 
 #include "WorldMap.h"
-#include "PanZoomLayer.h"
 #include "AppMacros.h"
 #include "GameScene.h"
 #include "User.h"
@@ -16,6 +15,7 @@
 #include "UpgradeScene.h"
 #include "OptionsScene.h"
 #include <SimpleAudioEngine.h>
+#include "GameTutorial.h"
 
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS) || (CC_TARGET_PLATFORM == CC_PLATFORM_MAC)
 
@@ -41,6 +41,20 @@ CCScene* WorldMap::scene()
     return scene;
 }
 
+WorldMap::WorldMap(): _levelUnlockAnim(NULL),_levelStars_1(NULL),_levelStars_2(NULL),_levelStars_3(NULL)
+{
+    
+}
+
+WorldMap::~WorldMap()
+{
+    if(_levelUnlockAnim)_levelUnlockAnim->release();
+    if(_levelStars_1)_levelStars_1->release();
+    if(_levelStars_2)_levelStars_2->release();
+    if(_levelStars_3)_levelStars_3->release();
+}
+
+
 bool WorldMap::init()
 {
     //////////////////////////////
@@ -49,6 +63,8 @@ bool WorldMap::init()
     {
         return false;
     }
+    
+    setTag(SCENE_WORLD_MAP);
     
     //Create the big map?
 //    CCSprite* pSprite = CCSprite::create("WorldMap/WorldMap_1.png");
@@ -60,7 +76,13 @@ bool WorldMap::init()
     // add a label shows "Hello World"
     // create and initialize a label
     
-    mLastMissionID = User::getInstance()->mCurrentMissionLevel;
+    // This is wroooong !!!
+//    mLastMissionID = User::getInstance()->mCurrentMissionLevel;
+    
+    mLastMissionID = User::getInstance()->mWorldMapLastMission;
+    if(mLastMissionID == -1){
+        User::getInstance()->mWorldMapLastMission = mLastMissionID = User::getInstance()->mCurrentMissionLevel;
+    }
     
     // Whats the screen size !!!
     mScreenSize = CCDirector::sharedDirector()->getVisibleSize();
@@ -75,7 +97,7 @@ bool WorldMap::init()
     map_base = CCSprite::create( "button_freez.png" );
     map_base->setAnchorPoint( ccp( 0, 0 ) );
     
-    PanZoomLayer *pzLayer = PanZoomLayer::create();
+    pzLayer = PanZoomLayer::create();
     this->addChild( pzLayer );
     
 	moveBackground = false;
@@ -123,6 +145,17 @@ bool WorldMap::init()
     map_base->addChild( mark );
     mark->setPosition( map_base->getContentSize() * 0.5 );
     */
+    
+    mPlayingStar_1 = false;
+    mPlayingStar_2 = false;
+    mPlayingStar_3 = false;
+    
+    mNeedToShowNewLevel = false;
+    
+    mWaitForStarToPlay_2 = 0;
+    mWaitForStarToPlay_3 = 0;
+    
+    mShowingNextLevel = false;
     
     // Values
     mCurrentMissionID = 0;//No mission
@@ -200,26 +233,430 @@ void WorldMap::CreateLevels()
     CCMenuItemImage *dummyItem;
     CCArray*array = CCArray::create();
     
+    CCSprite* text_num_1;
+    
     int aTotalMapNodes = mWorldNodeCords.size()/2;
+    
+//    CCSpriteFrameCache::sharedSpriteFrameCache()->addSpriteFrame("DialogFont_Hint.png", "hintttt.plist");
+    
+//    CCTextureCache::sharedTextureCache()->addImage("FontsBmp/DialogFont_Hint.plist");
+    
+    // Preload that batch file
+//    worldmap_batch.png
+    
+    CCSpriteFrameCache::sharedSpriteFrameCache()->addSpriteFramesWithFile("WorldMap/worldmap_batch.plist");
+    
+    _batchWorld = CCSpriteBatchNode::create("WorldMap/worldmap_batch.png");
+    _batchWorld->setPosition(CCPointZero);
+    map_base->addChild(_batchWorld);
+    
+    bool _missionCompleted = false;
+    int _missionStarsEarned = 0;
     
     // Create all the levels
     for(int i=0;i<aTotalMapNodes;i++)
     {
         //Add button above?
-        dummyItem = CCMenuItemImage::create("WorldMap/level_spot.png",
-                                              "WorldMap/level_spot.png",
+        _missionCompleted = false;
+        _missionStarsEarned = -1;
+        
+        CCLog("Mission Level: %i <= %i",i,(User::getInstance()->mCurrentMissionLevel-1));
+        
+        if(User::getInstance()->GetUserMissionInfo(i,1)>=0){
+            CCLog("Mission is unlocked [%i] !!!",i);
+            // we have unlocked it !!!
+            _missionCompleted = true;
+            
+            // 1=points | 2=stars
+            _missionStarsEarned = User::getInstance()->GetUserMissionInfo(i,2);
+        }
+        
+        /*
+        if((User::getInstance()->mCurrentMissionLevel-1)>=i){
+//            CCLog("Mission Level: %i <= %i",i,(User::getInstance()->mCurrentMissionLevel-1));
+            
+            // If tutorial enabled and step for base tutorial not completed - ignore this !!!
+            
+            _missionCompleted = true;
+            
+            // 1=points | 2=stars
+            _missionStarsEarned = User::getInstance()->GetUserMissionInfo(i,2);
+        }
+        */
+        
+        dummyItem = CCMenuItemImage::create("WorldMap/mission_panel.png",
+                                              "WorldMap/mission_panel.png",
                                               this,
                                               menu_selector(WorldMap::OnClickedMission));
         dummyItem->setTag(i+1);
         dummyItem->setOpacity(0);
-        dummyItem->setColor(ccBLUE);
+//        dummyItem->setColor(ccBLUE);
         dummyItem->setPosition(ccp(mWorldNodeCords[i*2],mWorldNodeCords[i*2+1]));
         array->addObject(dummyItem);
+        
+        // Add the locked nodes etc !!!
+        CCSprite* mission_panel = CCSprite::createWithSpriteFrameName("mission_panel.png");
+        mission_panel->setTag(1000+i);
+        mission_panel->setAnchorPoint(ccp(0.5,0.5));
+        mission_panel->setPosition(ccp(mWorldNodeCords[i*2],mWorldNodeCords[i*2+1]));
+        _batchWorld->addChild(mission_panel);
+        
+        CCSprite* flag_locked = CCSprite::createWithSpriteFrameName("mission_flag_locked.png");
+        flag_locked->setTag(MISSION_FLAG_LOCKED);
+        flag_locked->setVisible(true);
+        flag_locked->setAnchorPoint(ccp(0.5,0));
+        flag_locked->setPosition(ccp(mission_panel->getContentSize().width/2,23));//28
+        mission_panel->addChild(flag_locked);
+        
+        CCSprite* flag_open = CCSprite::createWithSpriteFrameName("mission_flag.png");
+        flag_open->setTag(MISSION_FLAG_OPEN);
+        flag_open->setVisible(false);
+        flag_open->setAnchorPoint(ccp(0.5,0));
+        flag_open->setPosition(ccp(mission_panel->getContentSize().width/2+0.5,22.5));
+        mission_panel->addChild(flag_open);
+        
+        // The 3 stars
+        for(int i=0;i<3;i++)
+        {
+            CCSprite* flag_star = CCSprite::createWithSpriteFrameName("star.png");
+            flag_star->setTag(MISSION_FLAG_STAR+i);
+            flag_star->setAnchorPoint(ccp(0.5,0.5));
+            
+            // Star positions
+            if(i == 0){
+                flag_star->setPosition(ccp(24,80));
+            }
+            else if(i == 1){
+                flag_star->setPosition(ccp(42,103));
+            }
+            else{
+                flag_star->setPosition(ccp(59,80));
+            }
+            
+            // hide not needed stuff
+            if(i<=_missionStarsEarned-1){
+                CCLog("Mission Stars: %i <= %i",i,(_missionStarsEarned-1));
+                flag_star->setVisible(true);
+            }
+            else{
+                flag_star->setVisible(false);
+            }
+            
+            flag_open->addChild(flag_star);
+        }
+        
+        // The numbers???
+        
+        // Check if this location is locked or not
+        if(_missionCompleted)
+        {
+            // Check if has any stars completed !!!
+            flag_open->setVisible(true);
+            flag_locked->setVisible(false);
+            
+            // Show the number
+            std::stringstream number_panel;
+            number_panel << (i+1);
+            
+            if(number_panel.str().size()==1){
+                // Only one number
+                std::stringstream theValue;
+                theValue << "world_map_num_" << number_panel.str() << ".png";
+                
+                text_num_1 = CCSprite::createWithSpriteFrameName(theValue.str().c_str());
+                text_num_1->setPosition(ccp(44,156));
+                flag_open->addChild(text_num_1);
+                
+            }
+            else{
+                // Two numbers
+                std::stringstream theValue_1;
+                std::stringstream theValue_2;
+                
+                theValue_1 << "world_map_num_" << number_panel.str().at(0) << ".png";
+                theValue_2 << "world_map_num_" << number_panel.str().at(1) << ".png";
+                
+                text_num_1 = CCSprite::createWithSpriteFrameName(theValue_1.str().c_str());
+                text_num_1->setPosition(ccp(36,156));
+                flag_open->addChild(text_num_1);
+                
+                // The 2nd number
+                text_num_1 = CCSprite::createWithSpriteFrameName(theValue_2.str().c_str());
+                text_num_1->setPosition(ccp(52,156));
+                flag_open->addChild(text_num_1);
+            }
+        }
     }
+    
+    // Init the animation
+    _levelUnlockAnim = SpriteAnimation::create("WorldMap/mission_unlock.plist",false);
+    _levelUnlockAnim->retain();
+    
+    _levelStars_1 = SpriteAnimation::create("WorldMap/star_pop.plist",false);
+    _levelStars_1->retain();
+    _levelStars_2 = SpriteAnimation::create("WorldMap/star_pop.plist",false);
+    _levelStars_2->retain();
+    _levelStars_3 = SpriteAnimation::create("WorldMap/star_pop.plist",false);
+    _levelStars_3->retain();
+    
+    // This is debug
+    /*
+    CCDelayTime* aDelay1 = CCDelayTime::create(1);
+    CCCallFuncN* aFuncDone = CCCallFuncN::create(this, callfuncN_selector(WorldMap::delayDebug));
+    CCDelayTime* aDelay2 = CCDelayTime::create(2);
+    CCCallFuncN* aFuncDone2 = CCCallFuncN::create(this, callfuncN_selector(WorldMap::delayDebug2));
+    CCSequence* aSeq = CCSequence::create(aDelay1,aFuncDone,aDelay2,aFuncDone2,NULL);
+    runAction(aSeq);
+    */
+    
+    // Add test animation flag
+    /*
+    SpriteAnimation* aChangeFlagAnim = SpriteAnimation::create("WorldMap/mission_unlock.plist");
+    aChangeFlagAnim->setAnchorPoint(ccp(0.5,0));
+//    aChangeFlagAnim->setOpacity(128);
+    aChangeFlagAnim->setPosition(ccp(mWorldNodeCords[6*2],mWorldNodeCords[6*2+1]));
+    map_base->addChild(aChangeFlagAnim);
+    */
+    
     
     CCMenu*menu = CCMenu::createWithArray(array);
     menu->setPosition(ccp(0,0));
     map_base->addChild(menu,1);
+}
+
+void WorldMap::delayDebug()
+{
+    UnlockLevel(6);
+}
+
+void WorldMap::delayDebug2()
+{
+    ShowMissionStarsEarned(6, 1,0);
+}
+
+void WorldMap::update(float delta)
+{
+    UpdateMap(delta);
+}
+
+void WorldMap::UpdateMap(float delta)
+{
+    //.................................................................................................
+    // The star show up animations
+    
+    if(mPlayingStar_1)
+    {
+        if(_levelStars_1->_action->isDone())
+        {
+            // Stop it
+            mPlayingStar_1 = false;
+            
+            // Remove and show the real star
+            CCSprite* flag_spot = (CCSprite*)_batchWorld->getChildByTag(1000+mCurrentCompletedMissionID);
+            CCSprite* flag_open = (CCSprite*)flag_spot->getChildByTag(MISSION_FLAG_OPEN);
+            flag_open->getChildByTag(MISSION_FLAG_STAR+0)->setVisible(true);
+            
+            map_base->removeChild(_levelStars_1, false);
+        }
+    }
+    
+    if(mPlayingStar_2)
+    {
+        if(_levelStars_2->_action->isDone())
+        {
+            // Stop it
+            mPlayingStar_2 = false;
+            
+            // Remove and show the real star
+            CCSprite* flag_spot = (CCSprite*)_batchWorld->getChildByTag(1000+mCurrentCompletedMissionID);
+            CCSprite* flag_open = (CCSprite*)flag_spot->getChildByTag(MISSION_FLAG_OPEN);
+            flag_open->getChildByTag(MISSION_FLAG_STAR+1)->setVisible(true);
+            
+            map_base->removeChild(_levelStars_2, false);
+        }
+    }
+    else if(mWaitForStarToPlay_2>0)
+    {
+        mWaitForStarToPlay_2-=delta;
+        if(mWaitForStarToPlay_2<=0){
+            mWaitForStarToPlay_2 = 0;
+            map_base->addChild(_levelStars_2);
+            mPlayingStar_2 = true;
+        }
+    }
+    
+    if(mPlayingStar_3)
+    {
+        if(_levelStars_3->_action->isDone())
+        {
+            // Stop it
+            mPlayingStar_3 = false;
+            
+            // Remove and show the real star
+            CCSprite* flag_spot = (CCSprite*)_batchWorld->getChildByTag(1000+mCurrentCompletedMissionID);
+            CCSprite* flag_open = (CCSprite*)flag_spot->getChildByTag(MISSION_FLAG_OPEN);
+            flag_open->getChildByTag(MISSION_FLAG_STAR+2)->setVisible(true);
+            
+            map_base->removeChild(_levelStars_3, false);
+        }
+    }
+    else if(mWaitForStarToPlay_3>0)
+    {
+        mWaitForStarToPlay_3-=delta;
+        if(mWaitForStarToPlay_3<=0){
+            mWaitForStarToPlay_3 = 0;
+            map_base->addChild(_levelStars_3);
+            mPlayingStar_3 = true;
+        }
+    }
+    
+    if(mNeedToShowNewLevel){
+        if(mPlayingStar_1==false
+           && mWaitForStarToPlay_2<=0 && mPlayingStar_2==false
+           && mWaitForStarToPlay_3<=0 && mPlayingStar_3==false){
+            mNeedToShowNewLevel = false;
+            UnlockLevel(User::getInstance()->mCurrentMissionLevel-1);
+        }
+    }
+    
+    //.................................................................................................
+    // The flag show up
+    
+    if(!mShowingNextLevel){
+        return;
+    }
+    
+    // Check if completed - then change
+    if(_levelUnlockAnim->_action->isDone())
+    {
+        // Show the unlocked stuff
+        mShowingNextLevel = false;
+        
+        // Get the real unlocked flag and show it
+        CCSprite* flag_spot = (CCSprite*)_batchWorld->getChildByTag(1000+mCurrentUnlockID);
+        CCSprite* flag_open = (CCSprite*)flag_spot->getChildByTag(MISSION_FLAG_OPEN);//->setVisible(true);
+        flag_open->setVisible(true);
+        
+        // Check how much stars needs
+        map_base->removeChild(_levelUnlockAnim,false);
+        
+        // The startsstss
+//        mCurrentUnlockID = 99;
+        
+        // Show the number
+        std::stringstream number_panel;
+        number_panel << mCurrentUnlockID+1;
+        
+        CCSprite* text_num_1;
+        
+        if(number_panel.str().size()==1){
+            // Only one number
+            std::stringstream theValue;
+            theValue << "world_map_num_" << number_panel.str() << ".png";
+            
+            text_num_1 = CCSprite::createWithSpriteFrameName(theValue.str().c_str());
+            text_num_1->setPosition(ccp(44,156));
+            text_num_1->setScale(0);
+            flag_open->addChild(text_num_1);
+            
+            CCScaleTo* aScale = CCScaleTo::create(0.25f,1);
+            CCEaseBackOut* aEase = CCEaseBackOut::create(aScale);
+            text_num_1->runAction(aEase);
+            
+        }
+        else{
+            // Two numbers
+            std::stringstream theValue_1;
+            std::stringstream theValue_2;
+            
+            theValue_1 << "world_map_num_" << number_panel.str().at(0) << ".png";
+            theValue_2 << "world_map_num_" << number_panel.str().at(1) << ".png";
+            
+            text_num_1 = CCSprite::createWithSpriteFrameName(theValue_1.str().c_str());
+            text_num_1->setPosition(ccp(52,156));
+            text_num_1->setScale(0);
+            flag_open->addChild(text_num_1);
+            
+            CCScaleTo* aScale = CCScaleTo::create(0.25f,1);
+            CCEaseBackOut* aEase = CCEaseBackOut::create(aScale);
+            text_num_1->runAction(aEase);
+            
+            // The 2nd number
+            text_num_1 = CCSprite::createWithSpriteFrameName(theValue_2.str().c_str());
+            text_num_1->setPosition(ccp(36,156));
+            text_num_1->setScale(0);
+            flag_open->addChild(text_num_1);
+            
+            aScale = CCScaleTo::create(0.25f,1);
+            aEase = CCEaseBackOut::create(aScale);
+            text_num_1->runAction(aEase);
+        }
+        
+//        User::getInstance()->SaveUserMissionInfo();
+        User::getInstance()->SaveUserMissionInfo(User::getInstance()->mCurrentMissionLevel-1, 0, 0);
+        User::getInstance()->SaveUserMissionUnlock();
+        
+        // Start now player move !!!
+        CCMoveTo* aMove1 = CCMoveTo::create(1.0f,ccp(mWorldNodeCords[(User::getInstance()->mCurrentMissionLevel-1)*2],
+                                                     mWorldNodeCords[(User::getInstance()->mCurrentMissionLevel-1)*2+1]+20));
+        CCEaseExponentialInOut* aEase1 = CCEaseExponentialInOut::create(aMove1);
+        CCCallFuncN* aFuncDone = CCCallFuncN::create(this, callfuncN_selector(WorldMap::OnPlayerFinishedMove));
+        CCSequence* aSeq1 = CCSequence::create(aEase1,aFuncDone,NULL);
+        mPlayer->runAction(aSeq1);
+    }
+}
+
+void WorldMap::ShowMissionStarsEarned(int theMissionID,int theStars,int fromStars)
+{
+    mCurrentCompletedMissionID = theMissionID;
+    
+    // Do the magic
+    CCSprite* flag_spot = (CCSprite*)_batchWorld->getChildByTag(1000+theMissionID);
+    CCSprite* flag_open = (CCSprite*)flag_spot->getChildByTag(MISSION_FLAG_OPEN);
+    CCSprite* aDummyStar;
+    
+    int aPosX = flag_spot->getPositionX()+flag_open->getPositionX();
+    int aPosY = flag_spot->getPositionY()+flag_open->getPositionY();
+    
+    // Fly the star animation
+    if(fromStars == 0 && theStars>0){
+        aDummyStar = (CCSprite*)flag_open->getChildByTag(MISSION_FLAG_STAR);
+        _levelStars_1->setPosition(ccp(aPosX+aDummyStar->getPositionX()-83,aPosY+aDummyStar->getPositionY()-24));
+        map_base->addChild(_levelStars_1);
+        mPlayingStar_1 = true;
+        fromStars+=1;
+        theStars-=1;
+    }
+    if(fromStars == 1 && theStars>0){
+        aDummyStar = (CCSprite*)flag_open->getChildByTag(MISSION_FLAG_STAR+1);
+        _levelStars_2->setPosition(ccp(aPosX+aDummyStar->getPositionX()-83,aPosY+aDummyStar->getPositionY()-24));
+        mWaitForStarToPlay_2 = 0.5f;
+        fromStars+=1;
+        theStars-=1;
+    }
+    if(fromStars == 2 && theStars>0){
+        aDummyStar = (CCSprite*)flag_open->getChildByTag(MISSION_FLAG_STAR+2);
+        _levelStars_3->setPosition(ccp(aPosX+aDummyStar->getPositionX()-83,aPosY+aDummyStar->getPositionY()-24));
+        mWaitForStarToPlay_3 = 1.0f;
+    }
+}
+
+void WorldMap::UnlockLevel(int theID)
+{
+    // This is our stuff
+    mCurrentUnlockID = theID;
+    
+    _levelUnlockAnim->setPosition(ccp(mWorldNodeCords[theID*2],mWorldNodeCords[theID*2+1]-5));
+    _levelUnlockAnim->setAnchorPoint(ccp(0.5,0));
+    
+    // Start the animation
+    map_base->addChild(_levelUnlockAnim);
+    
+    // Get the current locked flag
+    CCSprite* flag_spot = (CCSprite*)_batchWorld->getChildByTag(1000+theID);
+    flag_spot->getChildByTag(MISSION_FLAG_LOCKED)->setVisible(false);
+    
+    mShowingNextLevel = true;
 }
 
 void WorldMap::OnClickedPlayer(CCObject* sender)
@@ -842,19 +1279,52 @@ void WorldMap::UpdateStats()
     dwarfCount->setString(dwarfCountReal.str().c_str());
 }
 
+void WorldMap::removeNode(CCNode* sender)
+{
+    this->removeChild(sender, true);
+}
+
 void WorldMap::CreatePlayer()
 {
     // Try to load player with the image what he has on fb !!!
-    int _currentLevel = User::getInstance()->mCurrentMissionLevel-1;// Load from save
+//    int _currentLevel = User::getInstance()->mCurrentMissionLevel-1;// Load from save
+    int _currentLevel = User::getInstance()->mWorldMapLastMission-1;
     
-    CCSprite* base_1 = CCSprite::create("WorldMap/player_spot.png");
-    CCSprite* base_2 = CCSprite::create("WorldMap/avatar_none.png");
-    base_2->setPosition(ccp(base_1->getContentSize().width/2,base_1->getContentSize().height/2));
-    base_1->addChild(base_2);
+    
+    // Check if has FB image !!
+    bool aHasFB_Face = false;
+    CCSprite* base_1;
+    CCSprite* base_2;
+    
+    if(aHasFB_Face)
+    {
+        base_1 = CCSprite::create("WorldMap/player_spot.png");
+        base_2 = CCSprite::create("WorldMap/dwarfs_map.png");
+        base_2->setPosition(ccp(base_1->getContentSize().width/2,base_1->getContentSize().height/2));
+        base_1->addChild(base_2);
+    }
+    else
+    {
+        base_1 = CCSprite::create("WorldMap/dwarfs_map.png");
+    }
     
     CCMenuItemSprite *dummyItem = CCMenuItemSprite::create(base_1, base_1, this, menu_selector(WorldMap::OnClickedPlayer));
     mPlayer = CCMenu::createWithItem(dummyItem);
     mPlayer->setPosition(ccp(mWorldNodeCords[_currentLevel*2],mWorldNodeCords[_currentLevel*2+1]+30));
+    
+    // Check if tutorial - then fall from sky
+    if(GameTutorial::getInstance()->mTutorialCompleted==false)
+    {
+        if(GameTutorial::getInstance()->mCurrentTutorialStep<=TUTORIAL_S0_WORLD_MAP_MISSION_TAP){
+            mPlayer->setVisible(false);
+        }
+        else{
+             mPlayer->setVisible(true);
+        }
+    }
+    else{
+         mPlayer->setVisible(true);
+    }
     
     map_base->addChild(mPlayer);
     
@@ -864,21 +1334,172 @@ void WorldMap::CreatePlayer()
     
 }
 
+void WorldMap::onExit()
+{
+//    CCDirector::sharedDirector()->getTouchDispatcher()->removeDelegate(this);
+    CCLayer::onExit();
+    
+    // Stop updating
+    this->unscheduleUpdate();
+}
+
+void WorldMap::onEnter()
+{
+    CCLayer::onEnter();
+    
+    //Start it
+    this->scheduleUpdate();
+    
+    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+    {
+        // Set the scene
+        GameTutorial::getInstance()->SetWorldMapInstance(this);
+        
+        if(GameTutorial::getInstance()->mCurrentTutorialStep < TUTORIAL_S0_WORLD_MAP_MISSION_TAP)
+        {
+            // Move map a bit up?
+            CCMoveBy* aMoveMap = CCMoveBy::create(1.0f,ccp(0,-70));
+            CCEaseSineOut* aEase = CCEaseSineOut::create(aMoveMap);
+            pzLayer->runAction(aEase);
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S1_WAIT_FOR_ALL)
+        {
+            // Do the next magic !!!
+            GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+        }
+    }
+    
+    /*
+    if(mLastMissionID == 1)
+    {
+        if(GameTutorial::getInstance()->mTutorialCompleted == false)
+        {
+            // Set the scene
+            GameTutorial::getInstance()->SetWorldMapInstance(this);
+            
+            if(GameTutorial::getInstance()->mCurrentTutorialStep < TUTORIAL_S0_WORLD_MAP_MISSION_TAP)
+            {
+                // Move map a bit up?
+                CCMoveBy* aMoveMap = CCMoveBy::create(1.0f,ccp(0,-70));
+                CCEaseSineOut* aEase = CCEaseSineOut::create(aMoveMap);
+                pzLayer->runAction(aEase);
+                
+//                pzLayer->setPosition(ccp(pzLayer->getPositionX(),pzLayer->getPositionY()-70));
+            }
+        }
+    }
+    else
+    {
+        if(GameTutorial::getInstance()->mTutorialCompleted == false)
+        {
+            if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S1_WAIT_FOR_ALL)
+            {
+                // Do the next magic !!!
+                GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+            }
+        }
+    }
+    */
+}
+
+bool WorldMap::DidWeImproveMissionStars(int theMissionID)
+{
+    // Check save etc
+    int theStarsNow = User::getInstance()->GetUserMissionInfo(theMissionID,2);
+    // Check what we have now on map
+    CCSprite* aPlaceSprite = (CCSprite*)_batchWorld->getChildByTag(1000+theMissionID);
+    CCSprite* theFlagOpen = (CCSprite*)aPlaceSprite->getChildByTag(MISSION_FLAG_OPEN);
+    CCSprite* theStar;
+    
+    // Now check the stars
+    int aCurrentVisibleStars = 0;
+    for(int i=0;i<3;i++)
+    {
+        theStar = (CCSprite*)theFlagOpen->getChildByTag(MISSION_FLAG_STAR+i);
+        if(theStar->isVisible()){
+            aCurrentVisibleStars+=1;
+        }
+    }
+    CCLog("Current map stars [%i] vs Saved map stars [%i]",aCurrentVisibleStars,theStarsNow);
+    // We need to show new stars?
+    if(aCurrentVisibleStars!=theStarsNow){
+        // Pop the stars
+        ShowMissionStarsEarned(theMissionID, theStarsNow-aCurrentVisibleStars, aCurrentVisibleStars);
+        return true;
+    }
+    
+    return false;
+}
+
 void WorldMap::onEnterTransitionDidFinish()
 {
+    CCLOG("mLastMissionID: %i | mCurrentMissionLevel: %i",mLastMissionID,User::getInstance()->mCurrentMissionLevel);
+    CocosDenshion::SimpleAudioEngine::sharedEngine()->stopBackgroundMusic();
+    CocosDenshion::SimpleAudioEngine::sharedEngine()->stopAllEffects();
+    
+    // Check tutorial
+    if(mLastMissionID == 1)
+    {
+        if(GameTutorial::getInstance()->mTutorialCompleted == false)
+        {
+            // Set the scene
+            GameTutorial::getInstance()->SetWorldMapInstance(this);
+            
+            if(GameTutorial::getInstance()->mCurrentTutorialStep < TUTORIAL_S0_WORLD_MAP_MISSION_TAP)
+            {
+                // Do the intro for 1st map
+                GameTutorial::getInstance()->DoStep(TUTORIAL_S0_WORLD_MAP_INTRO);
+                
+                // Move map a bit up?
+//                pzLayer->setPosition(ccp(pzLayer->getPositionX(),pzLayer->getPositionY()-70));
+//                pzLayer->setPosition(ccp(map_base->getPositionX(),map_base->getPositionY()-100));
+            }
+        }
+    }
+    
+    // Check if we did imporve mission progress !!!
+    
+    // Check if at this mission we did do something - any improvements in stars etc
+    
+    bool showMissionImprove = DidWeImproveMissionStars(User::getInstance()->mCurrentStartedMission);
+    CCLog("Did we improve mission[%i]: %d",User::getInstance()->mCurrentStartedMission,showMissionImprove);
+    
+    
     if(mLastMissionID == User::getInstance()->mCurrentMissionLevel){
         return;
     }
     
+    // For now
+//    GameTutorial::getInstance()->mTutorialCompleted = true;
+    
     mLastMissionID = User::getInstance()->mCurrentMissionLevel;
     int _currentLevel = mLastMissionID-1;// Load from save
     
+    // Save it
+    User::getInstance()->mWorldMapLastMission = mLastMissionID = User::getInstance()->mCurrentMissionLevel;
+    CCLOG("_currentLevel: %i",_currentLevel);
+
+    
     // Move that player avatar to new space
+    
+    // First unlock anim - then move
+    if(showMissionImprove){
+        // Call after it
+        mNeedToShowNewLevel = true;
+    }
+    else{
+        mNeedToShowNewLevel = false;
+        UnlockLevel(User::getInstance()->mCurrentMissionLevel-1);
+    }
+    
+    
+    /*
     CCMoveTo* aMove1 = CCMoveTo::create(1.0f,ccp(mWorldNodeCords[_currentLevel*2],mWorldNodeCords[_currentLevel*2+1]+20));
     CCEaseExponentialInOut* aEase1 = CCEaseExponentialInOut::create(aMove1);
     CCCallFuncN* aFuncDone = CCCallFuncN::create(this, callfuncN_selector(WorldMap::OnPlayerFinishedMove));
     CCSequence* aSeq1 = CCSequence::create(aEase1,aFuncDone,NULL);
     mPlayer->runAction(aSeq1);
+    */
 }
 
 void WorldMap::OnPlayerFinishedMove()
@@ -888,6 +1509,21 @@ void WorldMap::OnPlayerFinishedMove()
     p->setPosition(mPlayer->getPosition());
     p->setAutoRemoveOnFinish(true);
     map_base->addChild(p,1000);
+    
+    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+    {
+        if(GameTutorial::getInstance()->mCurrentTutorialStep < TUTORIAL_S0_WORLD_MAP_MISSION_TAP)
+        {
+            // Do the intro for 1st map
+            GameTutorial::getInstance()->DoStep(TUTORIAL_S0_WORLD_MAP_INTRO);
+            
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_2ND_SHOOT_AT_TOTEM_COMPLETED)
+        {
+            // Dooo - SHOW THE STORE BUTTON
+            GameTutorial::getInstance()->DoStep(TUTORIAL_S2_WORLD_MAP_MOVE_TO_3_FINISHED);
+        }
+    }
 }
 
 /*
@@ -1034,6 +1670,29 @@ void WorldMap::PrepeareSmallMissionScreen()
 
 void WorldMap::ShowMissionScreen(int theID)
 {
+    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+    {
+        // Check if can click
+        if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_WORLD_MAP_MISSION_TAP && theID == 1)
+        {
+            // All ok continue to tutorial
+            GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+            return;
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S1_SHOW_WORLD_MAP_CLICK && theID == 2)
+        {
+            // Can continue
+            GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+            return;
+        }
+        else
+        {
+            
+            // No luck
+            return;
+        }
+    }
+    
 	moveBackground = true;
 	mSmallMissionScreen->removeChildByTag(30011);
 	mSmallMissionScreen->removeChildByTag(30010);
@@ -1104,6 +1763,18 @@ void WorldMap::HideMissionScreen(CCObject * pSender)
 // The other stuff
 void WorldMap::CreateHud()
 {
+    // If tutorial - skip this - dont show player any crap
+    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+    {
+        // Only when needed shot iw !!!
+        if(GameTutorial::getInstance()->mCurrentTutorialStep<TUTORIAL_S2_INTRO)
+        {
+            return;
+        }
+    }
+    
+    // All like normal
+    
     CCSprite * storeNormalSprite= CCSprite::create("Interfeiss/main_menu/new/store_btn_new0001.png");
     CCSprite * storeSelectedlSprite= CCSprite::create("Interfeiss/main_menu/new/store_btn_new0002.png");
     
@@ -1139,19 +1810,36 @@ void WorldMap::CreateHud()
     backButtonReload->setAnchorPoint(ccp(1,1));
     backButtonReload->setPosition(ccp(mScreenSize.width-8,mScreenSize.height-8));
     
-    CCMenu *mMainMenu = CCMenu::create(storeItem,
+    mMainMenu = CCMenu::create(storeItem,
                                challengesItem,backButtonReload,optionsItem,
                                NULL);
     
-//    mMainMenu->alignItemsHorizontally();
-    
     mMainMenu->setPosition(ccp(0,0));
     
-    mMainMenu->setTag(67881);
+    mMainMenu->setOpacity(0);
     
-//    map_base->addChild(mMainMenu);
+    mMainMenu->setTag(67881);
     addChild(mMainMenu);
     
+    // if tutorial - do not show instant !! - wait a bit
+    if(GameTutorial::getInstance()->mTutorialCompleted == false && GameTutorial::getInstance()->mCurrentTutorialStep <= TUTORIAL_S2_WORLD_MAP_MOVE_TO_3_FINISHED){
+        // Wait
+        
+        // HACK
+//        mLastMissionID = 2;
+    }
+    else{
+        // Just move up the buttons
+        MoveInWorldMapButtons();
+    }
+}
+
+void WorldMap::MoveInWorldMapButtons()
+{
+    CCFadeIn* aFadeIn = CCFadeIn::create(1.0f);
+    mMainMenu->runAction(aFadeIn);
+    
+//    TUTORIAL_S2_WORLD_MAP_MOVE_TO_3_FINISHED
 }
 
 void WorldMap::Hud_ShowOptions(CCObject* sender)
@@ -1183,9 +1871,20 @@ void WorldMap::Hud_ShowStore(CCObject* sender)
 //    
 //    mOptionsOpen = true;
     
+    
     StoreScene* storeLayer = StoreScene::create();
     storeLayer->setTag(2223);
     this->addChild(storeLayer,100);
+    
+    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+    {
+        // CHeck if does not need to process to next step
+        if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_WORLD_MAP_MOVE_TO_3_FINISHED)
+        {
+            // Show shop hand where to buy stuff
+            GameTutorial::getInstance()->DoStep(TUTORIAL_S2_WORLD_MAP_STORE_OPEN);
+        }
+    }
 }
 
 void WorldMap::OnRemoveStore()

@@ -35,6 +35,8 @@ User::User()
     
 //    mCurrentMissionLevel = 0;//No progress
     
+//    mWorldMapLastMission = 0;
+    
     mDebugSpeed_dwarf = 1.0f;
     mDebugSpeed_troll = 1.2f;
     
@@ -47,6 +49,9 @@ User::User()
     
     mDynamicTrolls = false;
     
+    // To know whats the current playing mission
+    mCurrentStartedMission = 0;
+    
     //For now disabled
     mSpecialMissionBuild = false;//was true when enabled
     mSpecialMissionProgress = 0;
@@ -57,6 +62,9 @@ User::User()
     
     mActiveSpells = cocos2d::CCUserDefault::sharedUserDefault()->getStringForKey("Spells_Active","0,0");
     mBoghtSpells = cocos2d::CCUserDefault::sharedUserDefault()->getStringForKey("Spells_Bought","");// Nothing bought at start !!!
+//    mBoghtSpells="";
+    mSpellInfo = cocos2d::CCUserDefault::sharedUserDefault()->getStringForKey("Spells_Info","");//On what level is what power !!!
+//    mSpellInfo="";
     
     // The Powers
     mBoghtPowers = cocos2d::CCUserDefault::sharedUserDefault()->getStringForKey("Powers_Bought","");
@@ -70,6 +78,12 @@ User::User()
     FirstSessionDone = cocos2d::CCUserDefault::sharedUserDefault()->getIntegerForKey("userFirstSession", 0);
     
     mCurrentMissionLevel = cocos2d::CCUserDefault::sharedUserDefault()->getIntegerForKey("MISSION_LVL", 1);
+//    mCurrentMissionLevel = 1;
+    
+    mWorldMapLastMission = -1;
+    
+    mMissionProgress = cocos2d::CCUserDefault::sharedUserDefault()->getStringForKey("MissionProgres","0:0:0");
+//    mMissionProgress = "0:0:0";
     
     _timesPlayed = cocos2d::CCUserDefault::sharedUserDefault()->getIntegerForKey("GamePlayedTimes", 0);
     
@@ -157,6 +171,131 @@ User::User()
     mSpecial_21_Mission = false;
     mSpecial_22_Mission = false;
     mSpecial_23_Mission = false;
+}
+
+// Ultimate functions
+std::vector<int> static &split(const std::string &s, char delim, std::vector<int> &elems){
+    std::stringstream ss(s);
+    std::string item;
+    int resultInt;
+    
+    while (std::getline(ss, item, delim)) {
+        resultInt = atoi(item.c_str());
+        elems.push_back(resultInt);
+    }
+    return elems;
+}
+
+std::vector<int> User::SplitString(const std::string s,char delim){
+    std::vector<int> elems;
+    split(s, delim, elems);
+    return elems;
+}
+
+// The split to string stuff
+std::vector<std::string> static &splitString(const std::string &s, char delim, std::vector<std::string> &elems){
+    std::stringstream ss(s);
+    std::string item;
+    std::string resultInt;
+    
+    while (std::getline(ss, item, delim)) {
+        resultInt = item;
+        elems.push_back(resultInt);
+    }
+    return elems;
+}
+
+std::vector<std::string> User::SplitString_VecString(const std::string s,char delim){
+    std::vector<std::string> elems;
+    splitString(s, delim, elems);
+    return elems;
+}
+
+int User::GetUserMissionInfo(int theID,int theType)
+{
+    std::string strBefore(mMissionProgress.begin(), mMissionProgress.end());
+    CCLog("Check Mission Data Before:%s",strBefore.c_str());
+    
+    std::vector<std::string> activeSpells = SplitString_VecString(mMissionProgress,',');
+    for (int i=0; i<activeSpells.size(); i++) {
+        // Sub split again
+        //Sub split it more
+        std::vector<int> subPowa = SplitString(activeSpells[i],':');
+        if(subPowa.size()>0)
+        {
+            if(subPowa[0] == theID){
+                return subPowa[theType];
+            }
+        }
+    }
+    
+    return -1;
+}
+
+void User::SaveUserMissionInfo(int theMissionID,int theScore,int theStars)
+{
+    // Save all stuff
+    bool didFoundOldData = false;
+    
+    CCLog("Save mission: %i|%i|%i",theMissionID,theScore,theStars);
+    
+    std::string strBefore(mMissionProgress.begin(), mMissionProgress.end());
+    CCLog("Save Mission Data Before:%s",strBefore.c_str());
+    
+    std::stringstream theFinalTouch;
+    
+    
+    //Find the object - if we don't have it - create new
+    std::vector<std::string> activeSpells = SplitString_VecString(mMissionProgress,',');
+    for (int i=0; i<activeSpells.size(); i++) {
+        //Sub split it more
+        std::vector<int> subPowa = SplitString(activeSpells[i],':');
+        if(subPowa.size()>0)
+        {
+            if(subPowa[0] == theMissionID){
+                didFoundOldData = true;
+                
+                // Check if score/stars is not smaller !!!
+                if(subPowa[1]<theScore){
+                    subPowa[1] = theScore;
+                }
+                if(subPowa[2]<theStars){
+                    subPowa[2] = theStars;
+                }
+//                break;
+            }
+            // Save it
+            theFinalTouch<<","<<subPowa[0]<<":"<<subPowa[1]<<":"<<subPowa[2];
+        }
+        
+        
+    }
+    
+    if(didFoundOldData == false){
+        // Create new
+        std::stringstream theNewFile;
+        theNewFile<<","<<theMissionID<<":"<<theScore<<":"<<theStars;
+        mMissionProgress.append(theNewFile.str().c_str());
+        
+        // Save now
+        std::string strAfter(mMissionProgress.begin(), mMissionProgress.end());
+        CCLog("Save Mission Data Final #1 :%s",strAfter.c_str());
+        cocos2d::CCUserDefault::sharedUserDefault()->setStringForKey("MissionProgres",strAfter.c_str());
+    }
+    else{
+        CCLog("Save Mission Data Final #2 :%s",theFinalTouch.str().c_str());
+        mMissionProgress = theFinalTouch.str();
+        cocos2d::CCUserDefault::sharedUserDefault()->setStringForKey("MissionProgres",theFinalTouch.str().c_str());
+    }
+    
+    cocos2d::CCUserDefault::sharedUserDefault()->flush();
+    
+}
+
+void User::SaveUserMissionUnlock()
+{
+    cocos2d::CCUserDefault::sharedUserDefault()->setIntegerForKey("MISSION_LVL",mCurrentMissionLevel);
+    cocos2d::CCUserDefault::sharedUserDefault()->flush();
 }
 
 void User::ResetData()

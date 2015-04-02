@@ -11,6 +11,7 @@
 #include "SpriteAnimation.h"
 #include "Dwarf.h"
 #include "User.h"
+#include "GameTutorial.h"
 
 USING_NS_CC;
 
@@ -85,15 +86,21 @@ bool DwarfIntro::init(GameScene* game, Dwarf* dwarf)
     }
     */
     
-    if(game->_gameTime<60 && game->_gameTime>3 && game->_dwarves->count()-1<=0)
+    if(GameTutorial::getInstance()->mTutorialCompleted == false && GameTutorial::getInstance()->mCurrentTutorialStep<TUTORIAL_S1_INTRO)
     {
-        //Instatnt spawn
-        schedule(schedule_selector(DwarfIntro::onFinshed), 0.0f, 1, 0.0f);
+        // Do whats needed
+        schedule(schedule_selector(DwarfIntro::onFinshed), 3.0f, 1, 0.0f);
     }
     else
     {
-        schedule(schedule_selector(DwarfIntro::onFinshed), 3.0f, 1, 0.0f);
+        if(game->_gameTime<60 && game->_gameTime>3 && game->_dwarves->count()-1<=0){
+            schedule(schedule_selector(DwarfIntro::onFinshed), 0.0f, 1, 0.0f);
+        }
+        else{
+            schedule(schedule_selector(DwarfIntro::onFinshed), 3.0f, 1, 0.0f);
+        }
     }
+
 	
 	return true;
 }
@@ -128,10 +135,17 @@ void DwarfIntro::update(float delta)
 	
 	_introLight->setOpacity(255.0f * maxOpacity * (1.0f - 2.0f * fabsf(timeInPhase - 0.5f)));
     
-    //Check if in map only 1 dwarf left - then instant spawn !!!
-    if(_game->_dwarves->count()<=1){
-        unschedule(schedule_selector(DwarfIntro::onFinshed));
-        onFinshed();
+    if(GameTutorial::getInstance()->mTutorialCompleted == false && GameTutorial::getInstance()->mCurrentTutorialStep<TUTORIAL_S1_INTRO)
+    {
+        
+    }
+    else
+    {
+        //Check if in map only 1 dwarf left - then instant spawn !!!
+        if(_game->_dwarves->count()<=1){
+            unschedule(schedule_selector(DwarfIntro::onFinshed));
+            onFinshed();
+        }
     }
 }
 

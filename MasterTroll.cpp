@@ -44,10 +44,10 @@ _game(NULL), _animation(NULL), _idleAnim(NULL), _jumpAnim(NULL), _magic_1_Anim(N
 
 MasterTroll::~MasterTroll()
 {
-    if (_game)
-    {
-        _game->release();
-    }
+//    if (_game)
+//    {
+//        _game->release();
+//    }
     if (_idleAnim) _idleAnim->release();
     if (_jumpAnim) _jumpAnim->release();
     if (_magic_1_Anim) _magic_1_Anim->release();
@@ -221,6 +221,10 @@ void MasterTroll::setAnimationByName(const char* theAnimation)
     {
         setAnimation(_smashAnim);
         
+    }
+    else if(strcmp(theAnimation,"Idle") == 0)
+    {
+        setAnimation(_idleAnim);
     }
     
 }

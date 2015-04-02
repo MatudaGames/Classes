@@ -10,6 +10,7 @@
 #include "GameScene.h"
 #include "SpriteAnimation.h"
 #include "Troll.h"
+#include "GameTutorial.h"
 
 USING_NS_CC;
 
@@ -111,7 +112,7 @@ bool TrollIntro::init(GameScene* game, Troll* troll)
 //	_animation->retain();
 //	addChild(_animation);
 	
-	schedule(schedule_selector(IntroAnimation::finished), 3.2f, 1, 0.0f);//A bit later !!! [0.7f, 1, 0.0f]
+    schedule(schedule_selector(IntroAnimation::finished), 3.2f, 1, 0.0f);//A bit later !!! [0.7f, 1, 0.0f]
 	
 	return true;
 }

@@ -13,6 +13,7 @@
 #include "AppMacros.h"
 #include "Utils.h"
 #include "User.h"
+#include "GameTutorial.h"
 
 #define kHUD_Z_Order 200
 
@@ -223,7 +224,18 @@ void Enemy_Totem::AttackFromPlayer(cocos2d::CCPoint position,SpellInfo theSpell)
     
     CCLog("Attack comes in quad [%i]",aAttackQuadID);
     
-    float finalDamage = theSpell.damage;
+    // Check if this is not a upgradable spell
+    float finalDamage = 0;
+    if(theSpell.upgrade_available)
+    {
+        // Get real damage
+        finalDamage = theSpell.upgrade_damage[User::getInstance()->getItemDataManager().getSpellItemLevel(theSpell.id)];
+    }
+    else
+    {
+        finalDamage = theSpell.damage;
+    }
+    
     
     // Now check if there is not damage shield any !!!
     if(aAttackQuadID == 1)
@@ -236,8 +248,17 @@ void Enemy_Totem::AttackFromPlayer(cocos2d::CCPoint position,SpellInfo theSpell)
                 if(mQuad_Vector_1[i].current_time_active>0)
                 {
                     //What shield is on?
-                    if(mQuad_Vector_1[i].event_type == 2){ finalDamage = float(theSpell.damage)*0.5;}// Half damage taken
-                    else if(mQuad_Vector_1[i].event_type == 1){finalDamage = 0;}// No damage
+                    if(mQuad_Vector_1[i].event_type == 2)
+                    {
+                        // Half damage taken
+                        if(theSpell.upgrade_available) finalDamage = float(theSpell.upgrade_damage[User::getInstance()->getItemDataManager().getSpellItemLevel(theSpell.id)])*0.5;
+                        else finalDamage = float(theSpell.damage)*0.5;
+                    }
+                    else if(mQuad_Vector_1[i].event_type == 1)
+                    {
+                        // No damage
+                        finalDamage = 0;
+                    }
                     break;
                 }
             }
@@ -253,8 +274,21 @@ void Enemy_Totem::AttackFromPlayer(cocos2d::CCPoint position,SpellInfo theSpell)
                 if(mQuad_Vector_2[i].current_time_active>0)
                 {
                     //What shield is on?
-                    if(mQuad_Vector_2[i].event_type == 2){ finalDamage = float(theSpell.damage)*0.5;}// Half damage taken
-                    else if(mQuad_Vector_2[i].event_type == 1){finalDamage = 0;}// No damage
+//                    if(mQuad_Vector_2[i].event_type == 2){ finalDamage = float(theSpell.damage)*0.5;}// Half damage taken
+//                    else if(mQuad_Vector_2[i].event_type == 1){finalDamage = 0;}// No damage
+                    
+                    //What shield is on?
+                    if(mQuad_Vector_2[i].event_type == 2)
+                    {
+                        // Half damage taken
+                        if(theSpell.upgrade_available) finalDamage = float(theSpell.upgrade_damage[User::getInstance()->getItemDataManager().getSpellItemLevel(theSpell.id)])*0.5;
+                        else finalDamage = float(theSpell.damage)*0.5;
+                    }
+                    else if(mQuad_Vector_2[i].event_type == 1)
+                    {
+                        // No damage
+                        finalDamage = 0;
+                    }
                     break;
                 }
             }
@@ -270,8 +304,21 @@ void Enemy_Totem::AttackFromPlayer(cocos2d::CCPoint position,SpellInfo theSpell)
                 if(mQuad_Vector_3[i].current_time_active>0)
                 {
                     //What shield is on?
-                    if(mQuad_Vector_3[i].event_type == 2){ finalDamage = float(theSpell.damage)*0.5;}// Half damage taken
-                    else if(mQuad_Vector_3[i].event_type == 1){finalDamage = 0;}// No damage
+//                    if(mQuad_Vector_3[i].event_type == 2){ finalDamage = float(theSpell.damage)*0.5;}// Half damage taken
+//                    else if(mQuad_Vector_3[i].event_type == 1){finalDamage = 0;}// No damage
+                    
+                    //What shield is on?
+                    if(mQuad_Vector_3[i].event_type == 2)
+                    {
+                        // Half damage taken
+                        if(theSpell.upgrade_available) finalDamage = float(theSpell.upgrade_damage[User::getInstance()->getItemDataManager().getSpellItemLevel(theSpell.id)])*0.5;
+                        else finalDamage = float(theSpell.damage)*0.5;
+                    }
+                    else if(mQuad_Vector_3[i].event_type == 1)
+                    {
+                        // No damage
+                        finalDamage = 0;
+                    }
                     break;
                 }
             }
@@ -287,12 +334,30 @@ void Enemy_Totem::AttackFromPlayer(cocos2d::CCPoint position,SpellInfo theSpell)
                 if(mQuad_Vector_4[i].current_time_active>0)
                 {
                     //What shield is on?
-                    if(mQuad_Vector_4[i].event_type == 2){ finalDamage = float(theSpell.damage)*0.5;}// Half damage taken
-                    else if(mQuad_Vector_4[i].event_type == 1){finalDamage = 0;}// No damage
+//                    if(mQuad_Vector_4[i].event_type == 2){ finalDamage = float(theSpell.damage)*0.5;}// Half damage taken
+//                    else if(mQuad_Vector_4[i].event_type == 1){finalDamage = 0;}// No damage
+                    
+                    //What shield is on?
+                    if(mQuad_Vector_4[i].event_type == 2)
+                    {
+                        // Half damage taken
+                        if(theSpell.upgrade_available) finalDamage = float(theSpell.upgrade_damage[User::getInstance()->getItemDataManager().getSpellItemLevel(theSpell.id)])*0.5;
+                        else finalDamage = float(theSpell.damage)*0.5;
+                    }
+                    else if(mQuad_Vector_4[i].event_type == 1)
+                    {
+                        // No damage
+                        finalDamage = 0;
+                    }
                     break;
                 }
             }
         }
+    }
+    
+    // Forced damage !!!
+    if(GameTutorial::getInstance()->mTutorialCompleted == false){
+        finalDamage = 9;
     }
     
     // Show the damage
@@ -347,6 +412,17 @@ void Enemy_Totem::AttackFromPlayer(cocos2d::CCPoint position,SpellInfo theSpell)
     // Safe check
     if(mNeedHP<=0){
         mNeedHP = 0;
+    }
+    
+    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+    {
+        if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_WAIT_DWARF_ATTACKING){
+            GameTutorial::getInstance()->DoStep(TUTORIAL_S2_1ST_SHOOT_AT_TOTEM_COMPLETED);
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_1ST_SHOOT_AT_TOTEM_COMPLETED){
+            // Hited 2nd ball
+            GameTutorial::getInstance()->DoStep(TUTORIAL_S2_2ND_SHOOT_AT_TOTEM_COMPLETED);
+        }
     }
 }
 

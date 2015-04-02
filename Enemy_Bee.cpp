@@ -15,6 +15,8 @@
 #include "Utils.h"
 #include "User.h"
 
+#include "GameTutorial.h"
+
 
 USING_NS_CC;
 using namespace CocosDenshion;
@@ -126,6 +128,25 @@ void Enemy_Bee::update(float delta)
     
     // Check if did get to final place !!!
     if(!_allCreated)return;
+    
+    // Special case
+    if(GameTutorial::getInstance()->mTutorialCompleted == false && GameTutorial::getInstance()->mCurrentTutorialStep<TUTORIAL_S1_INTRO)
+    {
+        //Walk by the movepoints
+        float x = getPositionX();
+        float y = getPositionY();
+        
+        CCPoint point = _movePoints->getControlPointAtIndex(mMoveIndex);
+        
+        setAngle(atan2f(point.y - y, point.x - x));
+        
+        CCPoint newPosition = ccp(x + cosf(_angle) * delta * _speed,
+                                  y + sinf(_angle) * delta * _speed);
+        
+        cocos2d::CCNode::setPosition(newPosition.x,newPosition.y);
+        
+        return;
+    }
     
     if(_timeOnMap>0){
         // Remove from map when can !!!

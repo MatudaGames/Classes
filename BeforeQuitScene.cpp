@@ -1,6 +1,7 @@
 #include "BeforeQuitScene.h"
 #include "StaticSceneManager.h"
 #include "PauseScene.h"
+#include "User.h"
 
 USING_NS_CC;
 
@@ -63,6 +64,27 @@ void BeforeQuitScene::leaveCallback()
 {
     if (_endingGame)
     {
+        // Check if new mission was unlocked !!!
+        CCLog("mCurrentStartedMission:%i | mCurrentMissionLevel: %i",User::getInstance()->mCurrentStartedMission,User::getInstance()->mCurrentMissionLevel);
+        
+        if(User::getInstance()->mCurrentStartedMission == (User::getInstance()->mCurrentMissionLevel-1))
+        {
+            // All cool unlock next
+            User::getInstance()->SaveUserMissionInfo(User::getInstance()->mCurrentStartedMission, 0, 1);
+            User::getInstance()->mCurrentMissionLevel += 1;
+        }
+        else{
+            // We played older mission
+            
+            // For debug - force save some data
+            User::getInstance()->SaveUserMissionInfo(User::getInstance()->mCurrentStartedMission, 0, 2);
+        }
+        
+        // For debug - force save some data
+//        User::getInstance()->SaveUserMissionInfo(User::getInstance()->mCurrentStartedMission, 0, 3);
+        // Move to next level
+//        User::getInstance()->mCurrentMissionLevel += 1;
+        
         CCScene* options = DF::StaticSceneManager::getInstance()->getScene(DF::StaticSceneManager::MISSIONS);
 //        CCTransitionScene* transition = CCTransitionSlideInL::create(0.5f, options);
         CCTransitionScene* transition = CCTransitionFade::create(0.5f,options,ccBLACK);

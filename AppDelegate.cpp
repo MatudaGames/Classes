@@ -18,6 +18,7 @@
 #include "PauseScene.h"
 #include "LoadingScreen.h"
 #include "WorldMap.h"
+#include "GameTutorial.h"
 
 USING_NS_CC;
 using namespace std;
@@ -51,7 +52,7 @@ bool AppDelegate::applicationDidFinishLaunching() {
     CCFileUtils::sharedFileUtils()->setSearchPaths(searchPath);
 	
     // turn on display FPS
-    pDirector->setDisplayStats(false);
+    pDirector->setDisplayStats(true);
 
     // set FPS. the default value is 1.0/60 if you don't call this
     pDirector->setAnimationInterval(1.0 / 60);
@@ -90,6 +91,9 @@ bool AppDelegate::applicationDidFinishLaunching() {
         cocos2d::CCUserDefault::sharedUserDefault()->setIntegerForKey("userFirstSession", _FirstSession);
         cocos2d::CCUserDefault::sharedUserDefault()->flush();
     }
+    
+    // Check tutorial
+    GameTutorial::getInstance();
     
     //randomize seed
     srand(Time::getTime());

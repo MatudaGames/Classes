@@ -14,6 +14,7 @@
 #include "SpriteAnimation.h"
 #include "Utils.h"
 #include "User.h"
+#include "GameTutorial.h"
 
 USING_NS_CC;
 using namespace CocosDenshion;
@@ -85,6 +86,8 @@ bool Dwarf::init(GameScene* game,int theType)
     
     mTotemSlow = 1;
     mTotemZoneIn = 0;
+    
+    mTutorialWaitTimeToNextStep = 0;
     
     // Qucik check for quad system - helper that says if dwarf is already removing
     _dwarfIsRemoving = false;
@@ -294,6 +297,36 @@ void Dwarf::onExit()
 	CCDirector::sharedDirector()->getTouchDispatcher()->removeDelegate(this);
 	
 	CCNode::onExit();
+    
+    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+    {
+        if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_FIRST_DWARF_ENTER_CAVE){
+            GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_DIALOG_MORE_DWARFS_WAIT){
+            GameTutorial::getInstance()->DoStep(TUTORIAL_S0_DIALOG_MORE_DWARFS_WAIT);
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_DIALOG_CRYSTAL_COLLECT){
+            GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S1_INTRO){
+            // Wait for 5 dwarfs in cave - then continue
+            if((_game->mTotalBlueDwarfs+_game->mTotalOrangeDwarfs) >= 5){
+                GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+            }
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S1_QUICK_PANIC_END){
+            // Wait for 5 dwarfs in cave - then continue
+            if((_game->mTotalBlueDwarfs+_game->mTotalOrangeDwarfs) >= 10){
+                GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+            }
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_WAIT_1ST_DWARF)
+        {
+            // Show that megene filled up
+            GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+        }
+    }
 }
 
 void Dwarf::UpdateBagIcon()
@@ -486,6 +519,16 @@ void Dwarf::update(float delta)
         return;
     }
     
+    
+    if(mTutorialWaitTimeToNextStep>0){
+        mTutorialWaitTimeToNextStep-=delta;
+        if(mTutorialWaitTimeToNextStep<=0){
+            GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+        }
+    }
+    
+    // Old broken tutorial
+    /*
     if(_game->mTutorialEnabled)
     {
         if(_game->mTutorialStep == 21)
@@ -494,6 +537,7 @@ void Dwarf::update(float delta)
             _game->OnTutorialStepCompleted(21);
         }
     }
+    */
     
     if(_knockOut){
         if(_knockOutTime>0){
@@ -1301,7 +1345,49 @@ bool Dwarf::ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
         return false;
     }
     
+    // The new tutorial
+    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+    {
+        if(GameTutorial::getInstance()->mCurrentTutorialStep<TUTORIAL_S1_INTRO)
+        {
+            // Do the tutorial stuff only
+            if(ccpDistanceSQ(touch->getLocation(), getPosition()) <= PICK_RADIUS * PICK_RADIUS)
+            {
+                // Check if was allowed to drag him
+                if(GameTutorial::getInstance()->mCurrentTutorialStep != TUTORIAL_S0_FIRST_DWARF_DRAG &&
+                   GameTutorial::getInstance()->mCurrentTutorialStep != TUTORIAL_S0_DIALOG_SPAWN_CRYSTAL &&
+                   GameTutorial::getInstance()->mCurrentTutorialStep != TUTORIAL_S2_MEGENE_SPAWN_CRYSTAL_WAIT){
+                    if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_DIALOG_MORE_DWARFS_WAIT){
+                        // Can continue
+                    }
+                    else{
+                        return false;
+                    }
+                }
+                else{
+                    // Do it boy
+                    GameTutorial::getInstance()->RemoveDrawHand();
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_SPAWN_CRYSTAL_WAIT)
+        {
+            // Do it boy
+            GameTutorial::getInstance()->RemoveDrawHand();
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_WAIT_DWARF_ATTACK)
+        {
+            // Do it boy
+            GameTutorial::getInstance()->RemoveDrawHand();
+        }
+    }
+    
     //Special stuff
+    /*
     if(_game->mTutorialEnabled && ccpDistanceSQ(touch->getLocation(), getPosition()) <= PICK_RADIUS * PICK_RADIUS)
     {
         if(_game->mTutorialStep == 3)//3
@@ -1369,6 +1455,7 @@ bool Dwarf::ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
             return false;
         }
     }
+    */
 	
 	if (ccpDistanceSQ(touch->getLocation(), getPosition()) <= PICK_RADIUS * PICK_RADIUS)
 	{
@@ -1450,9 +1537,11 @@ void Dwarf::ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
 //                CCLOG("DWARF_TYPE_TALL distance:%f",ccpDistanceSQ(cavePosition, position));
                 
 //                if (ccpDistanceSQ(cavePosition, position) <= 40 * 40)
-                if (ccpDistanceSQ(cavePosition, position) <= TALL_SNAP_TO_CAVE && User::getInstance()->mSpecial_12_Mission==false)
+                if (ccpDistanceSQ(cavePosition, position) <= TALL_SNAP_TO_CAVE)
                 {
                     bool aDidConnectCorrect = true;
+                    
+                    /*
                     if(_game->mTutorialEnabled)
                     {
                         if((_game->mTutorialStep == 12 || _game->mTutorialStep == 14 || _game->mTutorialStep==24) && !_game->mTutorialFlag_1)
@@ -1463,6 +1552,35 @@ void Dwarf::ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
                         
                         if(_game->mTutorialStep == 5 && _game->mTutorialFlag_1)
                             aDidConnectCorrect = false;
+                    }
+                    */
+                    
+                    // Lets try again
+                    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+                    {
+                        // Check how long is the rope
+                        if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_DIALOG_SPAWN_CRYSTAL)
+                        {
+                            if(GameTutorial::getInstance()->mConnectedTutorialStuff == false){
+                                aDidConnectCorrect = false;
+                            }
+                            else{
+                                aDidConnectCorrect = true;
+                            }
+                        }
+                        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_SPAWN_CRYSTAL_WAIT)
+                        {
+                            if(GameTutorial::getInstance()->mConnectedTutorialStuff == false){
+                                aDidConnectCorrect = false;
+                            }
+                            else{
+                                aDidConnectCorrect = true;
+                            }
+                        }
+                        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_WAIT_DWARF_ATTACK)
+                        {
+                            aDidConnectCorrect = false; // we need totem connect
+                        }
                     }
                     
                     if(aDidConnectCorrect)
@@ -1488,9 +1606,11 @@ void Dwarf::ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
 //                CCLOG("DWARF_TYPE_FAT distance:%f",ccpDistanceSQ(cavePosition, position));
                 
 //                if (ccpDistanceSQ(cavePosition, position) <= 30 * 30)
-                if (ccpDistanceSQ(cavePosition, position) <= FAT_SNAP_TO_CAVE && User::getInstance()->mSpecial_12_Mission==false)//1500
+                if (ccpDistanceSQ(cavePosition, position) <= FAT_SNAP_TO_CAVE)//1500
                 {
                     bool aDidConnectCorrect = true;
+                    
+                    /*
                     if(_game->mTutorialEnabled)
                     {
                         if((_game->mTutorialStep == 12 || _game->mTutorialStep == 6 || _game->mTutorialStep == 14) && !_game->mTutorialFlag_1)
@@ -1503,6 +1623,7 @@ void Dwarf::ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
                             aDidConnectCorrect = false;
                         }
                     }
+                    */
                     
                     if(aDidConnectCorrect)
                     {
@@ -1701,6 +1822,42 @@ void Dwarf::ccTouchEnded(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
         _game->highlightSmallDoor(true);
 	}
     
+    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+    {
+        if(GameTutorial::getInstance()->mCurrentTutorialStep<TUTORIAL_S1_INTRO)
+        {
+            if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_FIRST_DWARF_DRAG)
+            {
+                GameTutorial::getInstance()->CreateDrawHand(TUTORIAL_S0_FIRST_DWARF_DRAG);
+                
+                removeMovePoints();
+                startLine();
+            }
+            else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_DIALOG_SPAWN_CRYSTAL)
+            {
+                GameTutorial::getInstance()->CreateDrawHand(TUTORIAL_S0_DIALOG_SPAWN_CRYSTAL);
+                
+                removeMovePoints();
+                startLine();
+            }
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_SPAWN_CRYSTAL_WAIT)
+        {
+            GameTutorial::getInstance()->CreateDrawHand(TUTORIAL_S2_MEGENE_SPAWN_CRYSTAL_WAIT);
+            
+            removeMovePoints();
+            startLine();
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_WAIT_DWARF_ATTACK)
+        {
+            GameTutorial::getInstance()->CreateDrawHand(TUTORIAL_S2_MEGENE_WAIT_DWARF_ATTACK);
+            
+            removeMovePoints();
+            startLine();
+        }
+    }
+    
+    /*
     if(_game->mTutorialEnabled && !_isConnectedToCave)
     {
         if(_game->mTutorialStep<5)
@@ -1749,6 +1906,7 @@ void Dwarf::ccTouchEnded(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
             _game->CreateDrawHand(5);
         }
     }
+    */
 }
 
 void Dwarf::PickedSpecialObject(int theType)
@@ -2303,6 +2461,7 @@ bool Dwarf::addMovePoint(const cocos2d::CCPoint& point, const cocos2d::CCPoint& 
 			return false;
 		}
         
+        /*
         if(_game->mTutorialEnabled)
         {
             if(_game->mTutorialStep == 5)
@@ -2338,6 +2497,26 @@ bool Dwarf::addMovePoint(const cocos2d::CCPoint& point, const cocos2d::CCPoint& 
                 if(_game->getTutorialMask(x,y))
                 {
                     _game->mTutorialFlag_1 = true;//Collected crystal
+                }
+            }
+        }
+        */
+        
+        if(GameTutorial::getInstance()->mTutorialCompleted == false)
+        {
+            // Check if did draw trough crystal
+            if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_DIALOG_SPAWN_CRYSTAL)
+            {
+                // 400,170 [the crystal position]
+//                CCLOG("Current dot cords x:%f y:%f",x,y);
+                if(x<415 && x>385 && y>155 && y<185){
+                    GameTutorial::getInstance()->mConnectedTutorialStuff = true;
+                }
+            }
+            else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_SPAWN_CRYSTAL_WAIT)
+            {//500,440
+                if(x<515 && x>485 && y>425 && y<455){
+                    GameTutorial::getInstance()->mConnectedTutorialStuff = true;
                 }
             }
         }
@@ -2427,6 +2606,16 @@ void Dwarf::startLine()
 	_line->setTexture(CCTextureCache::sharedTextureCache()->addImage("trajectory_dot_white.png"));
     _isConnectedToCave = false;
     IsConnectedBlockTime = false;
+    
+    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+    {
+        if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_DIALOG_SPAWN_CRYSTAL){
+            GameTutorial::getInstance()->mConnectedTutorialStuff = false;
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_SPAWN_CRYSTAL_WAIT){
+            GameTutorial::getInstance()->mConnectedTutorialStuff = false;
+        }
+    }
 }
 
 void Dwarf::connectLine()
@@ -2487,6 +2676,7 @@ void Dwarf::connectLine()
 //	CCLOG("Connected");
     
     //Special stuff
+    /*
     if(_game->mTutorialEnabled)
     {
         if(_game->mTutorialStep == 2)
@@ -2503,6 +2693,24 @@ void Dwarf::connectLine()
             _game->OnTutorialStepCompleted(14);
         else if(_game->mTutorialStep == 24)
             _game->OnTutorialStepCompleted(24);
+    }
+    */
+    
+    // Move forward with life
+    if(GameTutorial::getInstance()->mTutorialCompleted == false)
+    {
+        if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_FIRST_DWARF_DRAG){
+            GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S0_DIALOG_SPAWN_CRYSTAL){
+            GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+        }
+        else if (GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_SPAWN_CRYSTAL_WAIT){
+            GameTutorial::getInstance()->IncreaseTutorialStep(NULL);
+        }
+        else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_WAIT_DWARF_ATTACK){
+            GameTutorial::getInstance()->IncreaseTutorialStep(NULL); // Connected to the totem
+        }
     }
 }
 

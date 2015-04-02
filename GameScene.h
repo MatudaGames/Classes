@@ -32,10 +32,10 @@
 #include "Enemy_Totem.h"
 
 #include "Universal_PowerItem.h"
-
+#include "MasterDwarf.h"
 #include "MasterTroll.h"
 
-#include "MasterDwarf.h"
+
 
 /*
 #if (CC_TARGET_PLATFORM == CC_PLATFORM_IOS)
@@ -106,6 +106,29 @@
 #define MT_EVENT_MASS 4
 #define MT_EVENT_ICEBLITZ 5
 #define MT_EVENT_CAVEBLOCK 6
+
+#define kHUD_Z_Order 200
+
+#define kFreezeSprite 111
+#define kNoPause 112
+
+//.............................................
+// Hud parts for showing and hiding
+
+#define HUD_PAUSE_BUTTON 90002
+#define HUD_SPEED_BUTTON 100
+//#define HUD_POINTS_PANEL 90003 // Deprecated ???
+#define HUD_CRYSTALS_BACK 90004
+#define HUD_POINTS_BACK 90005
+
+#define HUD_RAIVIS_1_PANEL 90010 // ccp(0,670)
+#define HUD_RAIVIS_2_PANEL 90011 // ccp(0,600)
+#define HUD_RAIVIS_3_PANEL 90012 // ccp(0,530)
+#define HUD_RAIVIS_4_PANEL 90013 //
+
+#define HUD_MEGENE_PANEL 90020 // megene???
+
+//.............................................
 
 // Here are the points that are given by each action
 //#define ATTACK_BAR_CRYSTAL_BLUE 20
@@ -186,6 +209,8 @@ public:
     cocos2d::CCLabelTTF* mDwarfSaveCounter;
     cocos2d::CCLabelTTF* mExtraCrystalCounter;
     
+    cocos2d::CCArray* _AnimationsToRemove;
+    
     bool mWaitForSaveMe;
     void GeneratePowerUp(int theType,int theTime);
     
@@ -205,6 +230,8 @@ public:
     
     // The Master Troll Attack stuff
     bool mAttackFunctionalActive;
+    
+    int mTotemFallY; // Where should totem fall
     
     int mMasterTroll_HP;        // What is Master Troll HP?
     float mMasterTroll_CurrentHP; // For smooth progress bar fill
@@ -318,6 +345,8 @@ public:
     //------------------------------------------
     //The new stuff
     
+    void HelpToShowHints(CCNode* sender);
+    
     void generatePowerItem(int theID);
     
     MissionSet mCurrentMission;
@@ -414,7 +443,9 @@ public:
 //	Crystal* generateCrystal(bool theNearDwarf);
     Crystal* generateCrystal(bool theNearDwarf,int theCrystalID,int theTimeOnMap);
     
-    void generateCrystalSpecial(int theX,int theY);
+    bool mNeedToSpawnSpellOnDwarf;
+    
+    void generateCrystalSpecial(int theX,int theY,int _theCrystalID);
     void generateDiamondSpecial(int theX,int theY);
 	void removeCrystal(Crystal* crystal);
     
@@ -525,6 +556,12 @@ public:
     void SetMasterTrollIdleAfterTime(float theTime);
     void SetMasterTrollAnimIdle();
     void CreateTrollIndicator(int theType);
+    void CreateOnlyMaster(int theMaster);
+    void CreateMonsterParade();
+    void CreateMasterTrollIntro();
+    void generateDwarfAtSpot(int theEnteranceSpot,int theType, bool theInstant);
+    int _tutorialSpecialCreatureSpawnAmount;
+    void OnSpawnNextParadeCreture(CCNode* node);
     
     //----------------------------------------------
     // The new mission sub stuff
@@ -814,7 +851,7 @@ public:
     cocos2d::CCMenu* _tutorialButtons;
     cocos2d::CCMenuItemImage* tutorial_button_gotit;
     
-    void CraeteHUD();
+//    void CraeteHUD(); // Deprecated
     
     TimedSpriteAnimation* _blueArrowAnim;
     TimedSpriteAnimation* _orangeArrowAnim;
@@ -959,6 +996,9 @@ public:
     float mPowerItem_CrystalRefiner; // How much gives each crystal more in procent
     
     void updateActiveInGamePowers(float delta);
+    
+    void AddTutorialUpdater();
+    void RemoveTutorialUpdater();
     
     //................................................
     

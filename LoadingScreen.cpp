@@ -12,6 +12,7 @@
 #include "StaticSceneManager.h"
 #include "AppMacros.h"
 #include "User.h"
+#include "GameTutorial.h"
 
 USING_NS_CC;
 using namespace CocosDenshion;
@@ -471,10 +472,33 @@ void LoadingScreen::OnItemDataDownloaded()
 void LoadingScreen::OnContinueGameInit()
 {
     CCLog("### All Loading completed - Start game ###");
-    // If all is completed - go fuher
-    CCScene* options = DF::StaticSceneManager::getInstance()->getScene(DF::StaticSceneManager::MISSIONS);;
+    
+    // New stuff - check Tutorial
+     // This is the real functional
+    if(!GameTutorial::getInstance()->StepCompleted(TUTORIAL_S0_INTRO))
+    {
+        // Start it
+        CCScene* scene = GameScene::scene();
+        CCTransitionScene* transition = CCTransitionFade::create(0.25f, scene,ccBLACK);
+        CCDirector::sharedDirector()->replaceScene(transition);
+    }
+    else
+    {
+        // If all is completed - go fuher
+        CCScene* options = DF::StaticSceneManager::getInstance()->getScene(DF::StaticSceneManager::MISSIONS);
+        CCTransitionFade* transition = CCTransitionFade::create(0.25f,options,ccBLACK);//CCTransitionSlideInR::create(0.5f, missions);
+        CCDirector::sharedDirector()->replaceScene(transition);
+    }
+    
+    
+    // This is the debug
+    /*
+    GameTutorial::getInstance()->mCurrentTutorialStep = TUTORIAL_S0_WORLD_MAP_INTRO;
+    
+    CCScene* options = DF::StaticSceneManager::getInstance()->getScene(DF::StaticSceneManager::MISSIONS);
     CCTransitionFade* transition = CCTransitionFade::create(0.25f,options,ccBLACK);//CCTransitionSlideInR::create(0.5f, missions);
     CCDirector::sharedDirector()->replaceScene(transition);
+    */
 }
 
 
@@ -649,6 +673,26 @@ void LoadingScreen::onPreloadImages()
     */
     
     //Lets preload some images =)
+    
+    // The Dwarf King
+    CCTextureCache::sharedTextureCache()->addImage("Characters/master_troll/king_idle.png");
+    CCTextureCache::sharedTextureCache()->addImage("Characters/master_troll/king_spell1.png");
+    CCTextureCache::sharedTextureCache()->addImage("Characters/master_troll/king_spell2.png");
+    
+    //The MasterTroll
+    CCTextureCache::sharedTextureCache()->addImage("Characters/master_troll/mt_idle.png");
+    CCTextureCache::sharedTextureCache()->addImage("Characters/master_troll/mt_jumping.png");
+    CCTextureCache::sharedTextureCache()->addImage("Characters/master_troll/mt_magic1.png");
+    CCTextureCache::sharedTextureCache()->addImage("Characters/master_troll/mt_magic2.png");
+    CCTextureCache::sharedTextureCache()->addImage("Characters/master_troll/mt_shoot.png");
+    CCTextureCache::sharedTextureCache()->addImage("Characters/master_troll/mt_smash.png");
+    
+    // The intro anims
+    CCTextureCache::sharedTextureCache()->addImage("Characters/evil_tree/evil_tree_profile.png");
+    CCTextureCache::sharedTextureCache()->addImage("Characters/bee/bee_fly_down.png");
+    CCTextureCache::sharedTextureCache()->addImage("Characters/goblin/goblin_walk_profile.png");
+    
+    CCTextureCache::sharedTextureCache()->addImage("bilde.png");
     
     //The troll
     CCTextureCache::sharedTextureCache()->addImage("Characters/troll/troll_diagonal_down.png");

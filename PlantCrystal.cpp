@@ -226,9 +226,9 @@ void PlantCrystal::spawnCrystals()
 {
     schedule(schedule_selector(PlantCrystal::spawnCrystals));
     //Pop some random crystals
-    _gameScene->generateCrystalSpecial(this->getPositionX()-50,this->getPositionY()+50);
-    _gameScene->generateCrystalSpecial(this->getPositionX()+50,this->getPositionY()+30);
-    _gameScene->generateCrystalSpecial(this->getPositionX(),this->getPositionY()+10);
+    _gameScene->generateCrystalSpecial(this->getPositionX()-50,this->getPositionY()+50,-1);
+    _gameScene->generateCrystalSpecial(this->getPositionX()+50,this->getPositionY()+30,-1);
+    _gameScene->generateCrystalSpecial(this->getPositionX(),this->getPositionY()+10,-1);
 }
 
 void PlantCrystal::onRemoveThisPlant()

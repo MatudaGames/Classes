@@ -20,6 +20,9 @@ class SpriteAnimation;
 #define ITEM_GHOST 1003
 #define ITEM_CRYSTAL_REFINERY 1004
 
+#define ITEM_ELECTRO 1005
+#define ITEM_FREEZER 1006
+
 class Universal_PowerItem: public cocos2d::CCNode, public cocos2d::CCTargetedTouchDelegate
 {
 public:

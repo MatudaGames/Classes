@@ -45,10 +45,10 @@ _game(NULL), _animation(NULL), _idleAnim(NULL), _spell_1_Anim(NULL), _spell_2_An
 
 MasterDwarf::~MasterDwarf()
 {
-    if (_game)
-    {
-        _game->release();
-    }
+//    if (_game)
+//    {
+//        _game->release();
+//    }
     if (_idleAnim) _idleAnim->release();
     if (_spell_1_Anim) _spell_1_Anim->release();
     if (_spell_2_Anim) _spell_2_Anim->release();

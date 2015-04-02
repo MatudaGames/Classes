@@ -3,12 +3,25 @@
 
 #include "cocos2d.h"
 #include "MissionManager.h"
+#include "PanZoomLayer.h"
+
+#define MISSION_FLAG_LOCKED 10
+#define MISSION_FLAG_OPEN 20
+#define MISSION_FLAG_STAR 30
 
 class WorldMap : public cocos2d::CCLayer
 {
 public:
+    
+    CREATE_FUNC(WorldMap);
+    
     // Here's a difference. Method 'init' in cocos2d-x returns bool, instead of returning 'id' in cocos2d-iphone
     virtual bool init();
+    
+    WorldMap();
+    virtual ~WorldMap();
+    
+    virtual void update(float delta);
     
     // there's no 'id' in cpp, so we recommend returning the class instance pointer
     static cocos2d::CCScene* scene();
@@ -17,12 +30,17 @@ public:
     void menuCloseCallback(CCObject* pSender);
     
     void onEnterTransitionDidFinish();
+    void onEnter();
+    void onExit();
     
     // implement the "static node()" method manually
-    CREATE_FUNC(WorldMap);
+    bool mNeedToShowNewLevel;
     
     // The map of the map base
     cocos2d::CCSprite *map_base;
+    
+    CCMenu *mMainMenu;
+    void MoveInWorldMapButtons();
     
     // Adds the cool map stuff
     void AddMovingObjects();
@@ -30,6 +48,8 @@ public:
     void UpdateStats();
     
     void CreateLevels();
+    
+    void removeNode(CCNode* sender);
     
     void OnClickedMission(CCObject* sender);
     void OnClickedPlayer(CCObject* sender);
@@ -52,6 +72,8 @@ public:
     
     void ResetStats();
     void BuyMoreDwarfs();
+    
+    PanZoomLayer *pzLayer;
     
     cocos2d::CCMenu* mPlayer;
     cocos2d::CCLabelTTF * taskInfo;
@@ -84,6 +106,33 @@ public:
     void Hud_ShowChallenges(CCObject* sender);
     void Hud_ShowUpgades(CCObject* sender);
     
+    cocos2d::CCSpriteBatchNode * _batchWorld;
+    SpriteAnimation* _levelUnlockAnim;
+    
+    int mCurrentCompletedMissionID;
+    SpriteAnimation* _levelStars_1;
+    bool mPlayingStar_1;
+    SpriteAnimation* _levelStars_2;
+    bool mPlayingStar_2;
+    SpriteAnimation* _levelStars_3;
+    bool mPlayingStar_3;
+    
+    bool mShowingNextLevel;
+    int mCurrentUnlockID;
+    
+    void UpdateMap(float delta);
+    void UnlockLevel(int theID);
+    
+    void ShowMissionStarsEarned(int theMissionID,int theStars,int fromStars);
+    void OnActivateStarShow(CCNode* sender);
+    bool DidWeImproveMissionStars(int theMissionID);
+    
+    float mWaitForStarToPlay_2;
+    float mWaitForStarToPlay_3;
+    
+    // Debug
+    void delayDebug();
+    void delayDebug2();
 
 };
 
