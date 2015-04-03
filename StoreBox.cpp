@@ -2594,15 +2594,21 @@ void StoreBox::CheckSpellButtons(bool OnlySpells, bool OnlyPowers)
             CCString* state_upgrade = NULL;
             CCLabelTTF* aItemDamage = NULL;
             
+            CCLog("----= Start =-----");
+            CCLog("Check Button with tag:%i",aButton->getTag());
+            
             if(User::getInstance()->getItemDataManager().getSpellByID(aButton->getTag()).upgrade_available)
             {
+                CCLog("Spell has upgrade:%i",aButton->getTag());
                 aUpgradeMenuOfBase = (CCMenu*)aButtonBase->getChildByTag(BUTTON_ACTION_2);
                 
                 if(User::getInstance()->getItemDataManager().isItemUnlocked(aButton->getTag()) == false){
+                    CCLog("Spell is locked:%i",aButton->getTag());
                     // Set visible false
-                    aUpgradeMenuOfBase->setVisible(true);
+                    aUpgradeMenuOfBase->setVisible(false);
                 }
                 else{
+                    CCLog("Spell is unlocked:%i",aButton->getTag());
                     aUpgradeMenuOfBase->setVisible(true);
                     aButton_Upgrade = (CCMenuItemImage*)aUpgradeMenuOfBase->getChildren()->objectAtIndex(0);
                     state_upgrade = (CCString*)aButton_Upgrade->getUserObject();
@@ -2663,10 +2669,10 @@ void StoreBox::CheckSpellButtons(bool OnlySpells, bool OnlyPowers)
             button_image_on.str("");button_image_on.clear();
             button_state.str("");button_state.clear();
             
-            if(aUpgradeMenuOfBase != NULL && aUpgradeMenuOfBase->isVisible())
+            if(aUpgradeMenuOfBase != NULL && aUpgradeMenuOfBase->isVisible() && aButton_Upgrade!= NULL)
             {
                 // We can check the upgrade part !!!
-                CCLog("mCurrentSelectedButtonIndex: %i | aButton->getTag(): %i",mCurrentSelectedButtonIndex,aButton_Upgrade->getTag());
+                CCLog("mCurrentSelectedButtonIndex: %i | aButton->getTag(): %i | is button visible? %d",mCurrentSelectedButtonIndex,aButton_Upgrade->getTag(),aUpgradeMenuOfBase->isVisible());
                 CCLog("state: %s",state_upgrade->m_sString.c_str());
                 
                 fontSize = TITLE_FONT_SIZE*0.6;
@@ -2810,6 +2816,7 @@ void StoreBox::CheckSpellButtons(bool OnlySpells, bool OnlyPowers)
                     aButton_Upgrade->setOpacity(128);
                 }
             }
+            CCLog("----= End =-----");
         }
         
         //..................................................................

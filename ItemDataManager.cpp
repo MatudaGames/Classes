@@ -557,6 +557,8 @@ bool ItemDataManager::isItemUnlocked(int theID)
     // Check if user has bought it or earned
 //    mBoghtSpells
     
+    
+    
     std::vector<int> boughtStuff = SplitString(User::getInstance()->mBoghtSpells,',');
     if(std::find(boughtStuff.begin(), boughtStuff.end(), theID) != boughtStuff.end()){
         // We found it
