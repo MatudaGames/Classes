@@ -2599,7 +2599,11 @@ void StoreBox::CheckSpellButtons(bool OnlySpells, bool OnlyPowers)
             CCMenu* aUpgradeMenuOfBase = NULL;
             CCMenuItemImage* aButton_Upgrade = NULL;
             CCString* state_upgrade = NULL;
-            CCLabelTTF* aItemDamage = NULL;
+            
+            CCLabelTTF* aTxt_Damage = NULL;
+            CCLabelTTF* aTxt_Range = NULL;
+            CCSprite* aIconDamage = NULL;
+            CCSprite* aIconRange = NULL;
             
             CCLog("----= Start =-----");
             CCLog("Check Button with tag:%i",aButton->getTag());
@@ -2624,7 +2628,10 @@ void StoreBox::CheckSpellButtons(bool OnlySpells, bool OnlyPowers)
                     aItemPriceText = (CCLabelTTF*)aButtonBase->getChildByTag(ITEM_PRICE_TEXT);
                     aItemPriceAmount = (CCLabelTTF*)aButtonBase->getChildByTag(ITEM_PRICE_AMOUNT);
                     
-                    aItemDamage = (CCLabelTTF*)aButtonBase->getChildByTag(SPELL_STATS_TXT_DAMAGE);
+                    aTxt_Damage = (CCLabelTTF*)aButtonBase->getChildByTag(SPELL_STATS_TXT_DAMAGE);
+                    aTxt_Range = (CCLabelTTF*)aButtonBase->getChildByTag(SPELL_STATS_TXT_RANGE);
+                    aIconDamage = (CCSprite*)aButtonBase->getChildByTag(SPELL_STATS_ICON_DAMAGE);
+                    aIconRange = (CCSprite*)aButtonBase->getChildByTag(SPELL_STATS_ICON_RANGE);
                 }
             }
             
@@ -2813,8 +2820,38 @@ void StoreBox::CheckSpellButtons(bool OnlySpells, bool OnlyPowers)
                 // Update the damage stats !!!
                 
                 std::stringstream aDamageTxt;
-                aDamageTxt << User::getInstance()->getItemDataManager().getSpellByID(aButton_Upgrade->getTag()).upgrade_damage[theItemLevel];
-                aItemDamage->setString(aDamageTxt.str().c_str());
+                aDamageTxt<<User::getInstance()->getItemDataManager().getSpellByID(aButton_Upgrade->getTag()).upgrade_damage[theItemLevel];
+                if(User::getInstance()->getItemDataManager().getSpellByID(aButton_Upgrade->getTag()).damage_extra>0)
+                {
+                    aDamageTxt << " + " <<User::getInstance()->getItemDataManager().getSpellByID(aButton_Upgrade->getTag()).damage_extra << " x " << User::getInstance()->getItemDataManager().getSpellByID(aButton_Upgrade->getTag()).damage_extra_multiply;
+                }
+                aTxt_Damage->setString(aDamageTxt.str().c_str());
+                
+                std::stringstream aRangeTxt;
+                aRangeTxt << User::getInstance()->getItemDataManager().getSpellByID(aButton_Upgrade->getTag()).range;
+                aTxt_Range->setString(aRangeTxt.str().c_str());
+                
+                // Position all stuff dynamic by text and icon size !!!
+                int iconText_Space = 10;
+                int statsToStats_Space = 20;
+                int statsY = 30;
+                
+                int aTotalStatsWidth = aIconDamage->getContentSize().width + iconText_Space + aTxt_Damage->getTextureRect().size.width + statsToStats_Space + aIconRange->getContentSize().width + iconText_Space + aTxt_Range->getTextureRect().size.width;
+                
+                int aGlobalMidOffestX = 40;
+                int aStartStatsX = (aButtonBase->getContentSize().width/2 - aTotalStatsWidth/2-aGlobalMidOffestX)-50;
+                
+                aIconDamage->setPosition(ccp(aStartStatsX,statsY));
+                aStartStatsX+=aIconDamage->getContentSize().width+iconText_Space;
+                
+                aTxt_Damage->setPosition(ccp(aStartStatsX,statsY));
+                aStartStatsX+=aTxt_Damage->getTextureRect().size.width+statsToStats_Space;
+                
+                aIconRange->setPosition(ccp(aStartStatsX,statsY));
+                aStartStatsX+=aIconRange->getContentSize().width+iconText_Space;
+                
+                aTxt_Range->setPosition(ccp(aStartStatsX,statsY));
+                
                 
                 if(theItemLevel>=theMaxUpgrades-1)
                 {

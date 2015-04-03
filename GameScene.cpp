@@ -1517,6 +1517,7 @@ void GameScene::CreateGameStartHUD()
     _scoreLabel->setAnchorPoint(ccp(0.5,0.5));
 	_scoreLabel->setPosition(ccp(pointsBack->getContentSize().width/2-40,pointsBack->getContentSize().height/2+1));
 	pointsBack->addChild(_scoreLabel);
+    pointsBack->setVisible(false);
     pointsBack->setTag(HUD_POINTS_BACK);
     
     CCSprite* diamondsBack = CCSprite::create("Interfeiss/in_game/diamond_count.png");
@@ -1539,7 +1540,7 @@ void GameScene::CreateGameStartHUD()
 	
 	_pointsCountLabel->setAnchorPoint(ccp(0.5,0.5));
 	_pointsCountLabel->setPosition(ccp(pointsScoreBack->getContentSize().width/2-45,pointsScoreBack->getContentSize().height/2+15));//27
-	pointsScoreBack->setVisible(true);
+	pointsScoreBack->setVisible(false);
 	pointsScoreBack->addChild(_pointsCountLabel);
     
      // What the heck is this ???
