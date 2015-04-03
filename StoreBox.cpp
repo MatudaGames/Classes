@@ -964,6 +964,13 @@ void StoreBox::CreateUpgrades()
                 MenuButtons->setVisible(false);
                 
             }
+            
+            if(_itemLevel>=theMaxUpgrades-1)
+            {
+                // HIde the button - all done
+                MenuButtons->setEnabled(false);
+                MenuButton->setOpacity(128);
+            }
         }
     }
     

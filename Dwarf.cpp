@@ -2536,13 +2536,13 @@ bool Dwarf::addMovePoint(const cocos2d::CCPoint& point, const cocos2d::CCPoint& 
             {
                 // 400,170 [the crystal position]
 //                CCLOG("Current dot cords x:%f y:%f",x,y);
-                if(x<415 && x>385 && y>155 && y<185){
+                if(x<425 && x>375 && y>145 && y<195){
                     GameTutorial::getInstance()->mConnectedTutorialStuff = true;
                 }
             }
             else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_SPAWN_CRYSTAL_WAIT)
             {//500,440
-                if(x<515 && x>485 && y>425 && y<455){
+                if(x<525 && x>475 && y>415 && y<465){
                     GameTutorial::getInstance()->mConnectedTutorialStuff = true;
                 }
             }

@@ -672,6 +672,9 @@ void LoadingScreen::onPreloadImages()
     CCTextureCache::sharedTextureCache()->addImage("gadalaiki/spring/map_spring.png");
     */
     
+    // Add some sprite sheets
+//    CCSpriteFrameCache::sharedSpriteFrameCache()->addSpriteFramesWithFile("InGameHUD.plist");
+    
     //Lets preload some images =)
     
     // The Dwarf King

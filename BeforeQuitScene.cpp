@@ -64,7 +64,8 @@ void BeforeQuitScene::leaveCallback()
 {
     if (_endingGame)
     {
-        // Check if new mission was unlocked !!!
+        // Check if new mission was unlocked !!! This is how it works
+        /*
         CCLog("mCurrentStartedMission:%i | mCurrentMissionLevel: %i",User::getInstance()->mCurrentStartedMission,User::getInstance()->mCurrentMissionLevel);
         
         if(User::getInstance()->mCurrentStartedMission == (User::getInstance()->mCurrentMissionLevel-1))
@@ -79,11 +80,7 @@ void BeforeQuitScene::leaveCallback()
             // For debug - force save some data
             User::getInstance()->SaveUserMissionInfo(User::getInstance()->mCurrentStartedMission, 0, 2);
         }
-        
-        // For debug - force save some data
-//        User::getInstance()->SaveUserMissionInfo(User::getInstance()->mCurrentStartedMission, 0, 3);
-        // Move to next level
-//        User::getInstance()->mCurrentMissionLevel += 1;
+        */
         
         CCScene* options = DF::StaticSceneManager::getInstance()->getScene(DF::StaticSceneManager::MISSIONS);
 //        CCTransitionScene* transition = CCTransitionSlideInL::create(0.5f, options);

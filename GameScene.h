@@ -218,6 +218,9 @@ public:
     
     void OnTryToShoot();
     
+    // Lets start to use sprite sheets
+    cocos2d::CCSpriteBatchNode * _batchHUD;
+    
     //----------------------------------------
     // The new special power up spawn stuff
     void updatePowerUpSpawn(float delta);

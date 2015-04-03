@@ -437,6 +437,7 @@ void WorldMap::delayDebug2()
 void WorldMap::update(float delta)
 {
     UpdateMap(delta);
+//    CCLog("Map pos: %f | %f",pzLayer->getPositionX(),pzLayer->getPositionY());
 }
 
 void WorldMap::UpdateMap(float delta)
@@ -641,10 +642,44 @@ void WorldMap::ShowMissionStarsEarned(int theMissionID,int theStars,int fromStar
     }
 }
 
+// Camera magic focus (drunk)
+void WorldMap::FocusCameraToCords(int theX,int theY)
+{
+    // A bit of offset
+    theX-=100;
+    theY-=100;
+    
+    int aPercentX = (theX*100)/2048;
+    int aRealX = (1024-(1088*aPercentX)/100);//Offest of camera
+    if(aRealX+200>=1024){
+        aRealX = 1024;
+    }
+    else{
+        aRealX+=200;
+    }
+    
+    int aPrecentY = (theY*100)/2560;
+    int aRealY = (1280-(1840*aPrecentY)/100);
+    if(aRealY+100>=1280){
+        aRealY = 1280;
+    }
+    else{
+        aRealY+=100;
+    }
+    
+    CCMoveTo* aMapMove = CCMoveTo::create(1.0f, ccp(aRealX,aRealY));
+    CCEaseSineOut* aEase = CCEaseSineOut::create(aMapMove);
+    pzLayer->runAction(aEase);
+}
+
 void WorldMap::UnlockLevel(int theID)
 {
     // This is our stuff
     mCurrentUnlockID = theID;
+    
+    // Force camera to scroll to that height for now !!!
+    FocusCameraToCords(mWorldNodeCords[theID*2],mWorldNodeCords[theID*2+1]-5);
+    
     
     _levelUnlockAnim->setPosition(ccp(mWorldNodeCords[theID*2],mWorldNodeCords[theID*2+1]-5));
     _levelUnlockAnim->setAnchorPoint(ccp(0.5,0));

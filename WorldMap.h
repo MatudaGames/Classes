@@ -122,6 +122,7 @@ public:
     
     void UpdateMap(float delta);
     void UnlockLevel(int theID);
+    void FocusCameraToCords(int theX,int theY);
     
     void ShowMissionStarsEarned(int theMissionID,int theStars,int fromStars);
     void OnActivateStarShow(CCNode* sender);

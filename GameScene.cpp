@@ -77,7 +77,7 @@ const float CAVE_DISTANCE = 50.0f;
 const float CAVE_DISTANCE_TALL = 50.0f;
 
 const float TROLL_DISTANCE = 30.0f;
-const float CRYSTAL_DISTANCE = 50.0f;//30
+const float CRYSTAL_DISTANCE = 90.0f;// was 50 / before 30
 const float EFFECT_DISTANCE = 50.0f;
 
 const float EFFECT_DISTANCE_TORNADO = 1400.0f;
@@ -1960,6 +1960,8 @@ void GameScene::CreateGameStartHUD()
         
         addChild(mPowerMenu,kHUD_Z_Order+1);
         */
+        //DEBUG
+        
         // No more power switch at game - instant set
         std::vector<int> theActiveSpells = User::getInstance()->getItemDataManager().getActiveItems();
         mCurrentSpellCharge = User::getInstance()->getItemDataManager().getSpellByID(theActiveSpells[0]).charge;
@@ -1967,8 +1969,8 @@ void GameScene::CreateGameStartHUD()
         //Update battle bar for any case !!!
         float aTotalValue = float(mMasterTroll_Attack) / float(mCurrentSpellCharge);
         if(aTotalValue>1)aTotalValue = 1;
-        mBattleBar_MachinePower->setTextureRect(CCRect(0, 0,mBattleBar_MachinePower->getTexture()->getContentSize().width*(aTotalValue),
-                                                       mBattleBar_MachinePower->getTexture()->getContentSize().height));
+        mBattleBar_MachinePower->setTextureRect(CCRect(0, 0,mBattleBar_MachinePower->getTexture()->getContentSize().width,
+                                                       mBattleBar_MachinePower->getTexture()->getContentSize().height*(aTotalValue)));
     }
     
     // Not needed for now !!!
@@ -3552,10 +3554,9 @@ void GameScene::OnMasterHitGround(CCNode* sender)
             {
                 // The machine progress bar
                 CCDelayTime* aDelay = CCDelayTime::create(0.2f);
-                CCScaleTo* aScaleAction = CCScaleTo::create(0.3f, 0.15f, 0.3f);
+                CCScaleTo* aScaleAction = CCScaleTo::create(0.3f, 1.0f, 1.0f);
                 CCEaseBackOut* aEase = CCEaseBackOut::create(aScaleAction);
                 CCSequence* aSeq = CCSequence::create(aDelay,aEase,NULL);
-//                mBattleBar_MachineBase->runAction(aSeq);
                 
                 // If tutorial 1st steps - do not spawn the progress bar !!!
                 if(GameTutorial::getInstance()->mTutorialCompleted == false){
@@ -18243,40 +18244,7 @@ void GameScene::CreateBattleArena()
     // The progress bar !!!
     // Dwarf king or electro machine
     CCSize aScreenSize = CCDirector::sharedDirector()->getVisibleSize();
-    
-    mBattleBar_MachineBase = CCSprite::create("small_dot_red.png");
-    
-    // The new stuff
-    /*
-    if(mDwarfCollectMachine){
-        mBattleBar_MachineBase->setPosition(ccp(aScreenSize.width/2,60));
-    }
-    else{
-        mBattleBar_MachineBase->setPosition(ccp(aScreenSize.width-60,294));
-    }
-    */
-    
-    mBattleBar_MachineBase->setPosition(ccp(aScreenSize.width-60,294));
-    
-    mBattleBar_MachineBase->setScaleX(0.0f);     //(0.15);
-    mBattleBar_MachineBase->setScaleY(0.0f);     //(0.3);
-    
-    addChild(mBattleBar_MachineBase,kHUD_Z_Order-1);
-    
-    CCSprite* aDummy = CCSprite::create("Interfeiss/challenges/daily/progress_days.png");
-    mBattleBar_MachineBase->addChild(aDummy);
-    
-    // The actual progress bar
-    mBattleBar_MachinePower = CCSprite::create("Interfeiss/challenges/daily/progress_days_fill.png");
-    mBattleBar_MachinePower->setAnchorPoint(ccp(0,0.5f));
-    mBattleBar_MachinePower->setPosition(ccp((aDummy->getContentSize().width-mBattleBar_MachinePower->getContentSize().width)/2,aDummy->getContentSize().height/2));
-    aDummy->addChild(mBattleBar_MachinePower);
-    
-    // The progress bar
-    mBattleBar_MachinePower->setTextureRect(CCRect(0, 0,
-                                              mBattleBar_MachinePower->getTexture()->getContentSize().width*(0.0f),
-                                              mBattleBar_MachinePower->getTexture()->getContentSize().height));
-    
+    CCSprite* aDummy;
     
     //----------------------------------------------------------------
     // The base sprites !!!
@@ -18303,6 +18271,32 @@ void GameScene::CreateBattleArena()
     mBattleBar_TrollHP->setTextureRect(CCRect(0, 0,
                                                    mBattleBar_TrollHP->getTexture()->getContentSize().width*(1.0f),
                                                    mBattleBar_TrollHP->getTexture()->getContentSize().height));
+    
+    // The new crystal bar? [USES SPRITE SHEETS - NOPE - DOES NOT WORK WITH SETTEXTURERECT]
+    mBattleBar_MachineBase = CCSprite::create("small_dot_red.png");
+    
+    mBattleBar_MachineBase->setPosition(ccp(aScreenSize.width-40,aScreenSize.height-90));
+    
+    mBattleBar_MachineBase->setOpacity(0);
+    mBattleBar_MachineBase->setScaleX(0.0f);     //(0.15);
+    mBattleBar_MachineBase->setScaleY(0.0f);     //(0.3);
+    
+    addChild(mBattleBar_MachineBase,kHUD_Z_Order-1);
+    
+    // The actual progress bar
+    mBattleBar_MachinePower = CCSprite::create("InGameHUD/DK_crystal_bar_fill.png");
+    mBattleBar_MachinePower->setAnchorPoint(ccp(0.5,1.0));
+    mBattleBar_MachinePower->setRotation(180);
+    mBattleBar_MachinePower->setPosition(ccp(2,(-mBattleBar_MachinePower->getContentSize().height/2)-20));
+    mBattleBar_MachineBase->addChild(mBattleBar_MachinePower);
+    
+    aDummy = CCSprite::create("InGameHUD/DK_crystal_bar.png");
+    mBattleBar_MachineBase->addChild(aDummy);
+    
+    // The progress bar
+    mBattleBar_MachinePower->setTextureRect(CCRect(0, 0,
+                                                   mBattleBar_MachinePower->getTexture()->getContentSize().width,
+                                                   mBattleBar_MachinePower->getTexture()->getContentSize().height*(0.0f)));
 }
 
 void GameScene::UpdateSmoothBattleBars(float delta)
@@ -18344,8 +18338,8 @@ void GameScene::UpdateSmoothBattleBars(float delta)
             if(aTotalValue>1)aTotalValue = 1;
             
             mBattleBar_MachinePower->setTextureRect(CCRect(0, 0,
-                                                           mBattleBar_MachinePower->getTexture()->getContentSize().width*(aTotalValue),
-                                                           mBattleBar_MachinePower->getTexture()->getContentSize().height));
+                                                           mBattleBar_MachinePower->getTexture()->getContentSize().width,
+                                                           mBattleBar_MachinePower->getTexture()->getContentSize().height*(aTotalValue)));
         }
     }
     else
@@ -18370,8 +18364,8 @@ void GameScene::UpdateSmoothBattleBars(float delta)
             if(aTotalValue>1)aTotalValue = 1;
             
             mBattleBar_MachinePower->setTextureRect(CCRect(0, 0,
-                                                           mBattleBar_MachinePower->getTexture()->getContentSize().width*(aTotalValue),
-                                                           mBattleBar_MachinePower->getTexture()->getContentSize().height));
+                                                           mBattleBar_MachinePower->getTexture()->getContentSize().width,
+                                                           mBattleBar_MachinePower->getTexture()->getContentSize().height*(aTotalValue)));
         }
     }
 }

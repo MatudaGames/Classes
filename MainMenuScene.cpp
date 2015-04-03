@@ -1059,6 +1059,9 @@ void MainMenuScene::onPreloadImages()
 {
     //Lets preload some images =)
     
+    // Add spirtesheets to game
+//    CCSpriteFrameCache::sharedSpriteFrameCache()->addSpriteFramesWithFile("InGameHUD.plist");
+    
     //The troll
     CCTextureCache::sharedTextureCache()->addImage("Characters/troll/troll_diagonal_down.png");
     CCTextureCache::sharedTextureCache()->addImage("Characters/troll/troll_diagonal_up.png");
