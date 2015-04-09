@@ -4,6 +4,7 @@
 #include "cocos2d.h"
 #include "MissionManager.h"
 #include "PanZoomLayer.h"
+#include "ItemDataManager.h"
 
 #define MISSION_FLAG_LOCKED 10
 #define MISSION_FLAG_OPEN 20
@@ -71,16 +72,23 @@ public:
     void OnPlayerFinishedMove();
     
     void ResetStats();
+    
     void BuyMoreDwarfs();
+    void BuyMoreDamage();
+    void BuyMoreRange();
     
     PanZoomLayer *pzLayer;
     
     cocos2d::CCMenu* mPlayer;
     cocos2d::CCLabelTTF * taskInfo;
     cocos2d::CCLabelTTF * dwarfCount;
+    cocos2d::CCLabelTTF * _damageCount;
+    cocos2d::CCLabelTTF * _rangeSize;
     cocos2d::CCLabelTTF * _diamondsLabel;
     cocos2d::CCLabelTTF * _crystalsLabel;
     cocos2d::CCLabelBMFont * dwarfPrice;
+    cocos2d::CCLabelBMFont * damagePrice;
+    cocos2d::CCLabelBMFont * rangePrice;
     cocos2d::CCLabelTTF * _totemHP;
     cocos2d::CCLabelTTF * _totemShield;
     cocos2d::CCLabelTTF * _totemAttack;
@@ -91,9 +99,13 @@ public:
     int mLastMissionID;
     int WhatMission;
     
+    int spellDamage;
+    int spellRange;
+    
     int TESTdwarfCount;
     
     MissionSet mCall;
+    SpellInfo mSpellInfo;
     
     cocos2d::CCLayerColor* mSmallMissionScreen;
     
@@ -122,7 +134,6 @@ public:
     
     void UpdateMap(float delta);
     void UnlockLevel(int theID);
-    void FocusCameraToCords(int theX,int theY);
     
     void ShowMissionStarsEarned(int theMissionID,int theStars,int fromStars);
     void OnActivateStarShow(CCNode* sender);

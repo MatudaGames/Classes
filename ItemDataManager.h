@@ -45,6 +45,7 @@ struct SpellInfo
     bool upgrade_available; // Is this item upgradable
     
     std::vector<int> upgrade_damage;
+    std::vector<int> default_upgrade_damage;
     std::vector<std::string> upgrade_cost;
     
     int max_upgrades;
@@ -52,6 +53,8 @@ struct SpellInfo
     int damage_extra;
     int damage_extra_time;
     int damage_extra_multiply;
+    
+    int defaultRange;
     
     std::string icon_path;
     
@@ -110,6 +113,11 @@ public:
     void upgradePowerItem(int theID);
     void upgradeSpellItem(int theID);
     
+    SpellInfo addExtraRange(int theID);
+    SpellInfo setDefaultRange();
+    SpellInfo addExtraDamage(int theID);
+	
+	bool canGiveExtra;
     bool isItemUnlocked(int theID);
     bool isItemActive(int theID);
     void onPurchaseItem(int theType,int theID);

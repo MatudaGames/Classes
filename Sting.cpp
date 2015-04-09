@@ -281,7 +281,7 @@ void Sting::update(float delta)
         
         if (!_touchable)
         {
-            _isDisabled = true;
+            //_isDisabled = true;
         }
     }
     
@@ -292,7 +292,7 @@ void Sting::update(float delta)
         {
             //Disable it - remove
             _timeActive = -1;
-            _isDisabled = true;
+            //_isDisabled = true;
         }
     }
     
@@ -310,7 +310,7 @@ void Sting::update(float delta)
                                         (_startY-getPositionY())*(_startY-getPositionY()));
             if(dwarfDistance>=_distanceActive)
             {
-                _isDisabled = true;
+                //_isDisabled = true;
                 _distanceActive = -1;
             }
         }
@@ -343,7 +343,8 @@ bool Sting::ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
     }
     
     if(ccpDistanceSQ(touch->getLocation(), getPosition()) <= PICK_RADIUS * PICK_RADIUS){
-        _touched = true;
+        /*
+		_touched = true;
         _isDisabled = true;
         _canMove = false;
         
@@ -354,6 +355,7 @@ bool Sting::ccTouchBegan(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
         _game->addChild(p,kHUD_Z_Order-1);
         
         return true;
+        */
     }
     
     _touched = false;

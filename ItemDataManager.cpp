@@ -22,6 +22,7 @@ int CHARGE_CRYSTAL_YELLOW = 50;
 ItemDataManager::ItemDataManager()
 {
     mReDownload = false;
+    canGiveExtra = false;
 }
 
 //....................................................................................................
@@ -247,6 +248,7 @@ void ItemDataManager::OnDownloadedData()
                     
                     // We have upgarde
                     aSpellInfo->upgrade_damage = SplitString(subDict->valueForKey("U_Damage")->getCString(),',');
+                    aSpellInfo->default_upgrade_damage = SplitString(subDict->valueForKey("U_Damage")->getCString(),',');
                     aSpellInfo->upgrade_cost = SplitString_VecString(subDict->valueForKey("U_Cost")->getCString(),',');
                     
                     aSpellInfo->max_upgrades = aSpellInfo->upgrade_cost.size();
@@ -279,7 +281,8 @@ void ItemDataManager::OnDownloadedData()
                 }
                 
                 aSpellInfo->range = subDict->valueForKey("Range")->intValue();
-                
+                aSpellInfo->defaultRange = subDict->valueForKey("Range")->intValue();
+                CCLog("Ramgeee");
                 aSpellInfo->icon_path = subDict->valueForKey("Icon_Path")->m_sString;
                 
                 mSpellDataVector.push_back(*aSpellInfo);
@@ -598,6 +601,76 @@ bool ItemDataManager::isItemActive(int theID)
     }
     
     return false;
+}
+
+SpellInfo ItemDataManager::addExtraRange(int theID)
+{
+	CCLog("More More Range");
+
+	SpellInfo *aSpell = NULL;
+    
+    for(int i=0;i<mSpellDataVector.size();i++)
+    {
+        if(mSpellDataVector[i].id == theID)
+        {
+            aSpell = &mSpellDataVector[i];
+            break;
+        }
+    }
+    
+    aSpell->range = aSpell->range + 1;
+    return *aSpell;
+}
+
+SpellInfo ItemDataManager::setDefaultRange()
+{
+	CCLog("Tiek uzstadita default vertiba");
+	SpellInfo *aSpell = NULL;
+    
+    for(int i=0;i<mSpellDataVector.size();i++)
+    {
+        aSpell = &mSpellDataVector[i];
+        aSpell->range = aSpell->defaultRange;
+        for (int g=0;g<=5;g++)
+        {
+            aSpell->upgrade_damage[g] = aSpell->default_upgrade_damage[g];	
+    	}
+    } 
+    
+    return *aSpell;
+}
+
+SpellInfo ItemDataManager::addExtraDamage(int theID)
+{
+	CCLog("More More Damage");
+
+	SpellInfo *bSpell = NULL;
+    
+    for(int i=0;i<mSpellDataVector.size();i++)
+    {
+        if(mSpellDataVector[i].id == theID)
+        {
+        	CCLog("i=%i", i);
+            bSpell = &mSpellDataVector[i];
+            for (int g=0;g<=5;g++)
+            {
+            //bSpell->default_upgrade_damage[g] = bSpell->upgrade_damage[g];	
+            bSpell->upgrade_damage[g] = bSpell->upgrade_damage[g]+1;
+            bSpell->damage = bSpell->damage + 1;
+            //break;
+        	}
+		}
+    }
+    
+    
+    //bSpell->upgrade_damage
+    //for(int g=0;g<mSpellDataVector.size();g++)
+    //{
+    //bSpell->upgrade_damage[g] = bSpell->upgrade_damage[g]+1;
+    //CCLog("Nav jau naudas %i", bSpell->upgrade_damage[g]);
+//	}
+    
+    return *bSpell;
 }
 
 void ItemDataManager::onSetSelectedItem(int theType, int theID)

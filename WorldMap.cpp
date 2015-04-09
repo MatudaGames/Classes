@@ -86,7 +86,6 @@ bool WorldMap::init()
     
     // Whats the screen size !!!
     mScreenSize = CCDirector::sharedDirector()->getVisibleSize();
-    
     // Init the world map cords
 //    std::string positions = "35,296,118,308,203,278,208,203,128,173,76,120,111,52,218,43,310,78,360,147";
     std::string positions =   "70,592,236,616,406,556,416,406,256,346,152,240,222,104,436,86,620,156,720,294,770,580,844,764,1040,886,1316,846,1536,690,1348,500,1476,298,1814,232,1922,504,1826,720,1690,904";
@@ -139,7 +138,6 @@ bool WorldMap::init()
     
     // Set it now at start
     pzLayer->setPosition(ccp(aSizeW,aSizeH));
-    
     /*
     CCSprite *mark = CCSprite::create( "button_freez.png" );
     map_base->addChild( mark );
@@ -437,7 +435,6 @@ void WorldMap::delayDebug2()
 void WorldMap::update(float delta)
 {
     UpdateMap(delta);
-//    CCLog("Map pos: %f | %f",pzLayer->getPositionX(),pzLayer->getPositionY());
 }
 
 void WorldMap::UpdateMap(float delta)
@@ -677,10 +674,6 @@ void WorldMap::UnlockLevel(int theID)
     // This is our stuff
     mCurrentUnlockID = theID;
     
-    // Force camera to scroll to that height for now !!!
-    FocusCameraToCords(mWorldNodeCords[theID*2],mWorldNodeCords[theID*2+1]-5);
-    
-    
     _levelUnlockAnim->setPosition(ccp(mWorldNodeCords[theID*2],mWorldNodeCords[theID*2+1]-5));
     _levelUnlockAnim->setAnchorPoint(ccp(0.5,0));
     
@@ -759,7 +752,7 @@ void WorldMap::MissionTaskInditificator(int theID)
                                                         "WorldMap/NewPregame/ButtonPlusOne.png",
                                                         "WorldMap/NewPregame/ButtonPlusOne.png",
                                                         this,
-                                                        menu_selector(WorldMap::HideMissionScreen));
+                                                        menu_selector(WorldMap::BuyMoreDamage));
     plusOneDamage->setTag(714);//Play the level
     plusOneDamage->setPosition(ccp(mSmallMissionScreen->getContentSize().width/2.0-185,mSmallMissionScreen->getContentSize().height/2-200));
     
@@ -767,12 +760,37 @@ void WorldMap::MissionTaskInditificator(int theID)
                                                         "WorldMap/NewPregame/ButtonPlusOne.png",
                                                         "WorldMap/NewPregame/ButtonPlusOne.png",
                                                         this,
-                                                        menu_selector(WorldMap::HideMissionScreen));
+                                                        menu_selector(WorldMap::BuyMoreRange));
     plusOneRange->setTag(715);//Play the level
     plusOneRange->setPosition(ccp(mSmallMissionScreen->getContentSize().width/2.0+5,mSmallMissionScreen->getContentSize().height/2-200));
 	
+	damagePrice =CCLabelBMFont::create("0", "PowerButtons/PB_Font.fnt",150, kCCTextAlignmentCenter);
+   	damagePrice->setPosition(ccp(mSmallMissionScreen->getContentSize().width/2-125,mSmallMissionScreen->getContentSize().height/2-200));//160,700 
+    damagePrice->setWidth(10);
+    damagePrice->setTag(300017);
+    
+	
+	rangePrice =CCLabelBMFont::create("0", "PowerButtons/PB_Font.fnt",150, kCCTextAlignmentCenter);
+   	rangePrice->setPosition(ccp(mSmallMissionScreen->getContentSize().width/2+50,mSmallMissionScreen->getContentSize().height/2-200));//160,700 
+    rangePrice->setWidth(10);
+    rangePrice->setTag(300018);
+	
 	if(mCall.Task_type==6 || mCall.Task_type==8)
 	{
+	_damageCount = CCLabelTTF::create("0","PowerButtons/PB_Font.fnt", TITLE_FONT_SIZE*0.5, CCSize(250,250), kCCTextAlignmentLeft, kCCVerticalTextAlignmentBottom);
+    _damageCount->setPosition(ccp(mSmallMissionScreen->getContentSize().width/2.0-2,mSmallMissionScreen->getContentSize().height/2.0+37));//160,700 
+    _damageCount->setTag(30012);
+    _damageCount->setColor(ccc3(36,102,102));
+    mSmallMissionScreen->addChild(_damageCount,1);
+	
+	_rangeSize = CCLabelTTF::create("0","PowerButtons/PB_Font.fnt", TITLE_FONT_SIZE*0.5, CCSize(250,250), kCCTextAlignmentLeft, kCCVerticalTextAlignmentBottom);
+    _rangeSize->setPosition(ccp(mSmallMissionScreen->getContentSize().width/2.0+181,mSmallMissionScreen->getContentSize().height/2.0+37));//160,700
+    _rangeSize->setTag(30013);
+    _rangeSize->setColor(ccc3(36,102,102));
+    mSmallMissionScreen->addChild(_rangeSize,1);	
+    		
+	mSmallMissionScreen->addChild(damagePrice,1);
+	mSmallMissionScreen->addChild(rangePrice,1);	
 	mSmallMissionScreen->addChild(aScreenBooster2);
 	mSmallMissionScreen->addChild(aScreenBooster3);
 	CCMenu* aButtonMenuA = CCMenu::create(plusOneDamage,plusOneRange,NULL);
@@ -780,6 +798,47 @@ void WorldMap::MissionTaskInditificator(int theID)
     aButtonMenuA->setPosition(ccp(0,0));
     aButtonMenuA->setTag(716);
     mSmallMissionScreen->addChild(aButtonMenuA);
+    int aTotalSpells = User::getInstance()->getItemDataManager().mSpellDataVector.size();
+    for(int i = 0;i<aTotalSpells;i++)
+    {
+    	if(User::getInstance()->getItemDataManager().isItemActive(User::getInstance()->getItemDataManager().mSpellDataVector[i].id))
+    	{
+    		bool _upgradable = false;
+    		int _itemLevel = 0;
+    		spellDamage = 0;
+    		if(User::getInstance()->getItemDataManager().mSpellDataVector[i].upgrade_available){
+            _upgradable = true;
+            _itemLevel = User::getInstance()->getItemDataManager().getSpellItemLevel(User::getInstance()->getItemDataManager().mSpellDataVector[i].id);
+        	}
+        	else{
+            _itemLevel = 0;
+            _upgradable = false;
+        	}
+        	if(_upgradable)
+        	{
+    		spellDamage = User::getInstance()->getItemDataManager().mSpellDataVector[i].upgrade_damage[_itemLevel];
+    		}else{
+			spellDamage = User::getInstance()->getItemDataManager().mSpellDataVector[i].damage;
+    		}
+    		//User::getInstance()->getItemDataManager().addExtraRange(User::getInstance()->getItemDataManager().mSpellDataVector[i].id);
+    		spellRange = User::getInstance()->getItemDataManager().mSpellDataVector[i].range;
+    		std::stringstream damageCountReal;
+    		damageCountReal<<int(spellDamage);
+    		_damageCount->setString(damageCountReal.str().c_str());
+    		
+    		std::stringstream rangeCountReal;
+    		rangeCountReal<<int(spellRange);
+    		_rangeSize->setString(rangeCountReal.str().c_str());
+			
+			std::stringstream damagePriceReal;
+    		damagePriceReal<<int(mCall.STORE_Booster_DamagePrice);
+    		damagePrice->setString(damagePriceReal.str().c_str());
+    	
+    		std::stringstream rangePriceReal;
+    		rangePriceReal<<int(mCall.STORE_Booster_RangePrice);
+    		rangePrice->setString(rangePriceReal.str().c_str());
+		}
+	}
 	}
 	if (mCall.Task_type==1)
 	{
@@ -1240,7 +1299,7 @@ void WorldMap::ResetStats()
 
 void WorldMap::BuyMoreDwarfs()
 {
-	CCLog("Works so far!!!");
+	//CCLog("Works so far!!!");
     
     int aPrice = mCall.STORE_Booster_DwarfPrice;
 	
@@ -1303,6 +1362,70 @@ void WorldMap::BuyMoreDwarfs()
 	
 }
 
+void WorldMap::BuyMoreDamage()
+{
+	CCLog("Damage++");
+	int aPrice = mCall.STORE_Booster_DamagePrice;
+	
+	int aDidUseDiamonds = User::getInstance()->canUseDiamonds(aPrice);//BOOSTER_2_PRICE
+        if(aDidUseDiamonds<0)
+        {
+            //Show popup that no money
+            return;
+        }else{
+        	if(aPrice <=0)
+        	{
+        	}else{
+        		int aTotalSpells = User::getInstance()->getItemDataManager().mSpellDataVector.size();
+        		 for(int i = 0;i<aTotalSpells;i++)
+    			{
+    				if(User::getInstance()->getItemDataManager().isItemActive(User::getInstance()->getItemDataManager().mSpellDataVector[i].id))//Check if spell is active.
+    				{
+						User::getInstance()->getItemDataManager().addExtraDamage(User::getInstance()->getItemDataManager().mSpellDataVector[i].id);//AddExtraRange
+						if(User::getInstance()->getItemDataManager().mSpellDataVector[i].upgrade_available){
+							int _itemLevel = User::getInstance()->getItemDataManager().getSpellItemLevel(User::getInstance()->getItemDataManager().mSpellDataVector[i].id);
+            				spellDamage = User::getInstance()->getItemDataManager().mSpellDataVector[i].upgrade_damage[_itemLevel];
+						}
+        				else{
+            				spellDamage = User::getInstance()->getItemDataManager().mSpellDataVector[i].damage;
+        				}
+        			}
+				}
+        	}
+		}
+
+	UpdateStats();
+}
+
+void WorldMap::BuyMoreRange()
+{
+	CCLog("Range++");
+	
+		int aPrice = mCall.STORE_Booster_RangePrice;
+	
+	int aDidUseDiamonds = User::getInstance()->canUseDiamonds(aPrice);//BOOSTER_2_PRICE
+        if(aDidUseDiamonds<0)
+        {
+            //Show popup that no money
+            return;
+        }else{
+        	if(aPrice <=0)
+        	{
+        	}else{
+        		int aTotalSpells = User::getInstance()->getItemDataManager().mSpellDataVector.size();
+        		 for(int i = 0;i<aTotalSpells;i++)
+    			{
+    				if(User::getInstance()->getItemDataManager().isItemActive(User::getInstance()->getItemDataManager().mSpellDataVector[i].id))//Check if spell is active.
+    				{
+						User::getInstance()->getItemDataManager().addExtraRange(User::getInstance()->getItemDataManager().mSpellDataVector[i].id);//AddExtraRange
+						spellRange = User::getInstance()->getItemDataManager().mSpellDataVector[i].range;//Update Range counter
+        			}
+				}
+			}
+			}
+	UpdateStats();
+}
+
 void WorldMap::UpdateStats()
 {
 	std::stringstream _diamondsLabelReal;
@@ -1312,6 +1435,22 @@ void WorldMap::UpdateStats()
     std::stringstream dwarfCountReal;
     dwarfCountReal<<int(mCall.Mission_SaveDwarfs);
     dwarfCount->setString(dwarfCountReal.str().c_str());
+    
+    std::stringstream damageCountReal;
+    damageCountReal<<int(spellDamage);
+    _damageCount->setString(damageCountReal.str().c_str());
+    		
+    std::stringstream rangeCountReal;
+    rangeCountReal<<int(spellRange);
+    _rangeSize->setString(rangeCountReal.str().c_str());
+			
+	std::stringstream damagePriceReal;
+    damagePriceReal<<int(mCall.STORE_Booster_DamagePrice);
+    damagePrice->setString(damagePriceReal.str().c_str());
+    	
+    std::stringstream rangePriceReal;
+    rangePriceReal<<int(mCall.STORE_Booster_RangePrice);
+    rangePrice->setString(rangePriceReal.str().c_str());
 }
 
 void WorldMap::removeNode(CCNode* sender)
@@ -1729,6 +1868,10 @@ void WorldMap::ShowMissionScreen(int theID)
     }
     
 	moveBackground = true;
+	mSmallMissionScreen->removeChildByTag(300018);
+	mSmallMissionScreen->removeChildByTag(300017);
+	mSmallMissionScreen->removeChildByTag(30013);
+	mSmallMissionScreen->removeChildByTag(30012);
 	mSmallMissionScreen->removeChildByTag(30011);
 	mSmallMissionScreen->removeChildByTag(30010);
 	mSmallMissionScreen->removeChildByTag(30009);
@@ -1758,6 +1901,10 @@ void WorldMap::HideMissionScreen(CCObject * pSender)
     CCMenuItem* pMenuItem = (CCMenuItem *)(pSender);
     int tag = (int)pMenuItem->getTag();
     
+    mSmallMissionScreen->removeChildByTag(300018);
+    mSmallMissionScreen->removeChildByTag(300017);
+    mSmallMissionScreen->removeChildByTag(30013);
+    mSmallMissionScreen->removeChildByTag(30012);
     mSmallMissionScreen->removeChildByTag(30011);
     mSmallMissionScreen->removeChildByTag(30010);
     mSmallMissionScreen->removeChildByTag(30009);
