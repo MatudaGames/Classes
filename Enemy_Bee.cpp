@@ -139,7 +139,7 @@ void Enemy_Bee::update(float delta)
         // Runs timer while ice melts down
         mFreezedTime -= delta;
         
-        if(mFreezedTime<1){
+        }else if(mFreezedTime<1){
             //We are unfreezing
             mFreezedTime = 0;
             canMove = false;
@@ -148,9 +148,6 @@ void Enemy_Bee::update(float delta)
             _animation->setColor(ccc3(255,255,255));
         
         }
-        
-        return;
-    }
     
     // Check if did get to final place !!!
     if(!_allCreated)return;
@@ -265,7 +262,7 @@ void Enemy_Bee::update(float delta)
                 	}			
             }
 	*/
-	if (ccpDistanceSQ(point, getPosition()) <= 1001)//800
+	if (ccpDistanceSQ(point, getPosition()) <= 100)//800
     {
     	CCLog("IzpildasS");
         if(_moveInCircle){
@@ -336,12 +333,14 @@ void Enemy_Bee::update(float delta)
             _beeIdleBeforeFire = 0;
             Dir = 1;
             //Fire the bullet !!!
+            /*
             CCSprite* aBullet = CCSprite::create("Characters/bee/dzelonis2.png");
             aBullet->setPosition(ccp(getPositionX()+5, getPositionY()+5));
             CCMoveTo* aMoveBy;
             CCRotateTo* aRotateTo;
             aBullet->setFlipX(!_animation->isFlipX());
-            /*
+            */
+			/*
 			if(!_animation->isFlipX()){
                 aMoveBy = CCMoveBy::create(bullet_speed,ccp(0, 10));
             }
@@ -465,7 +464,13 @@ void Enemy_Bee::update(float delta)
             //aBullet->runAction(aRepeat);
            
             //_bulletArr->addObject(aBullet);
-            canMove = true;
+            int waitBeforeFly = 2;
+            if(waitBeforeFly>0){
+        	waitBeforeFly-=delta;
+        		if(waitBeforeFly<=0){
+            	canMove = true;
+            	}
+            }
             //_game->addChild(aBullet);
             //beeWillShoot = false;
             
