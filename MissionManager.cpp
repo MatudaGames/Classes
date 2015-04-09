@@ -1951,6 +1951,7 @@ MissionSet MissionManager::Reset(int theID)
     
     MissionSet *aMission = &mAllMission[theID];
     aMission->Mission_SaveDwarfs = aMission->OrginalDwarfCount;
+    User::getInstance()->getItemDataManager().setDefaultRange();
 //    MissionSet *aMission = &mAllMission[mCurrentActiveMission];
     return *aMission;
 }
@@ -5333,6 +5334,8 @@ void MissionManager::OnDownloadedSpecial()
         mission->Task_SurviveTime = 0;
         mission->Task_SurviveLives = 0;
         mission->STORE_Booster_DwarfPrice = 0;
+        mission->STORE_Booster_DamagePrice = 0;
+        mission->STORE_Booster_RangePrice = 0;
         
         //For MissionType_DwarfCount, number of dwarfs to win a mission
         if(missionDict->valueForKey("Task_DwarfWinCon")->compare("") != 0) mission->Task_DwarfWinCon = missionDict->valueForKey("Task_DwarfWinCon")->intValue();
@@ -5341,8 +5344,10 @@ void MissionManager::OnDownloadedSpecial()
         //For MissionType_TimeUpdate
         if(missionDict->valueForKey("Task_SurviveTime")->compare("") != 0) mission->Task_SurviveTime = missionDict->valueForKey("Task_SurviveTime")->intValue();
         if(missionDict->valueForKey("Task_SurviveLives")->compare("") != 0) mission->Task_SurviveLives = missionDict->valueForKey("Task_SurviveLives")->intValue();
-        //Some Extra store stuff
+        //For Booster price 
         if(missionDict->valueForKey("STORE_Booster_DwarfPrice")->compare("") != 0) mission->STORE_Booster_DwarfPrice = missionDict->valueForKey("STORE_Booster_DwarfPrice")->intValue();
+        if(missionDict->valueForKey("STORE_Booster_DamagePrice")->compare("") != 0) mission->STORE_Booster_DamagePrice = missionDict->valueForKey("STORE_Booster_DamagePrice")->intValue();
+        if(missionDict->valueForKey("STORE_Booster_RangePrice")->compare("") != 0) mission->STORE_Booster_RangePrice = missionDict->valueForKey("STORE_Booster_RangePrice")->intValue();
         
         // TEST STUFF
         // The bee stuff

@@ -368,7 +368,8 @@ struct MissionSet
     std::vector<int> SpellSpawnPoints;// Correct forced places for spawn spells
     
     int32_t STORE_Booster_DwarfPrice;
-    
+    int32_t STORE_Booster_DamagePrice;
+    int32_t STORE_Booster_RangePrice;
 };
 
 struct CompletedStuff
