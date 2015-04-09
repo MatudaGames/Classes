@@ -1592,7 +1592,7 @@ void Dwarf::ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
                     	addMovePoint(cavePosition, position,false);
                         _touchEnded = true;
                         connectLine();
-                        vibrate();	
+                        //vibrate();JustForAndroid5Test	
                     	}
                     }
                     else
@@ -1634,7 +1634,7 @@ void Dwarf::ccTouchMoved(cocos2d::CCTouch* touch, cocos2d::CCEvent* event)
                     	addMovePoint(cavePosition, position,false);
                         _touchEnded = true;
                         connectLine();
-                        vibrate();	
+                        //vibrate();JustForAndroid5Test	
                     	}
                     }
                     else
@@ -2536,13 +2536,13 @@ bool Dwarf::addMovePoint(const cocos2d::CCPoint& point, const cocos2d::CCPoint& 
             {
                 // 400,170 [the crystal position]
 //                CCLOG("Current dot cords x:%f y:%f",x,y);
-                if(x<425 && x>375 && y>145 && y<195){
+                if(x<415 && x>385 && y>155 && y<185){
                     GameTutorial::getInstance()->mConnectedTutorialStuff = true;
                 }
             }
             else if(GameTutorial::getInstance()->mCurrentTutorialStep == TUTORIAL_S2_MEGENE_SPAWN_CRYSTAL_WAIT)
             {//500,440
-                if(x<525 && x>475 && y>415 && y<465){
+                if(x<515 && x>485 && y>425 && y<455){
                     GameTutorial::getInstance()->mConnectedTutorialStuff = true;
                 }
             }
@@ -2806,10 +2806,14 @@ void Dwarf::FireBulletAtTroll(int thePowerID)
     
     if(mSnapedToMasterTroll)
     {
+    	aDummyBullet = CCSprite::create("effects/spell/dwarf_spelllight.png");
+    	aDummyBullet->setPosition(ccp(getPositionX(),getPositionY()));
         aMoveAction = CCMoveTo::create(0.5f,ccp(_game->_MasterTrollBase->getPositionX(),_game->_MasterTrollBase->getPositionY()));
     }
     else if(mSnapedToTotem)
     {
+    	aDummyBullet = CCSprite::create("effects/spell/dwarf_spelllight.png");
+    	aDummyBullet->setPosition(ccp(getPositionX(),getPositionY()));
         aMoveAction = CCMoveTo::create(0.5f,ccp(_game->mTotem->getPositionX(),_game->mTotem->getPositionY()));
     }
     else if (mSnapedTest)
@@ -3092,7 +3096,11 @@ void Dwarf::setPowerButton(int theID)
     else if(theID >= 100) // The spell stuff
     {
         mSpellForAttack = User::getInstance()->getItemDataManager().getSpellByID(mContainsPowerUp);
-        mPowerUpIcon = CCSprite::create("button_spell.png");
+        mPowerUpIcon = CCSprite::create("effects/spell/spell.png");//button_spell.png
+        CCRotateBy* CCRotateBy;
+		CCRotateBy = CCRotateBy::create(4.0f,100,100);
+    	mPowerUpIcon->runAction(CCRotateBy);
+        mPowerUpIcon->setPosition(ccp(0,65));
     }
     
     addChild(mPowerUpIcon,-1);

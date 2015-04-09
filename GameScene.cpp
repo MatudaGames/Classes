@@ -66,6 +66,7 @@
 #include "TrollBullet.h"
 
 #include "GameTutorial.h"
+#include "Sting.h"
 
 USING_NS_CC;
 using namespace CocosDenshion;
@@ -77,7 +78,7 @@ const float CAVE_DISTANCE = 50.0f;
 const float CAVE_DISTANCE_TALL = 50.0f;
 
 const float TROLL_DISTANCE = 30.0f;
-const float CRYSTAL_DISTANCE = 90.0f;// was 50 / before 30
+const float CRYSTAL_DISTANCE = 50.0f;//30
 const float EFFECT_DISTANCE = 50.0f;
 
 const float EFFECT_DISTANCE_TORNADO = 1400.0f;
@@ -1730,7 +1731,7 @@ void GameScene::CreateGameStartHUD()
             dwarfsLeft->cocos2d::CCNode::setPosition(ccp(-(dwarfsLeft->getContentSize().width+50),600));
             dwarfsLeft->setVisible(true);
             dwarfsLeft->setTag(HUD_RAIVIS_2_PANEL);
-            addChild(dwarfsLeft, kHUD_Z_Order+1);
+            addChild(dwarfsLeft, kHUD_Z_Order-1);
             
             CCSprite* dwarfsLost = CCSprite::create("Interfeiss/in_game/UI/DwarfsLost.png");
             dwarfsLost->setAnchorPoint(ccp(0, 0.5));
@@ -3558,6 +3559,7 @@ void GameScene::OnMasterHitGround(CCNode* sender)
                 CCScaleTo* aScaleAction = CCScaleTo::create(0.3f, 1.0f, 1.0f);
                 CCEaseBackOut* aEase = CCEaseBackOut::create(aScaleAction);
                 CCSequence* aSeq = CCSequence::create(aDelay,aEase,NULL);
+//                mBattleBar_MachineBase->runAction(aSeq);
                 
                 // If tutorial 1st steps - do not spawn the progress bar !!!
                 if(GameTutorial::getInstance()->mTutorialCompleted == false){
@@ -11202,6 +11204,7 @@ void GameScene::NewMissionCompleted()
 void GameScene::OnExitWithNewMission()
 {
 	User::getInstance()->getMissionManager().Reset(User::getInstance()->getMissionManager().GetActiveMissionID()); 
+	User::getInstance()->getItemDataManager().setDefaultRange();
     User::getInstance()->mCurrentMissionLevel += 1;
     
     removeChildByTag(2014);
@@ -11213,6 +11216,8 @@ void GameScene::OnExitWithNewMission()
 //    CCDirector::sharedDirector()->replaceScene(transition);
    
     User::getInstance()->getMissionManager().Reset(User::getInstance()->getMissionManager().GetActiveMissionID()); 
+	User::getInstance()->getItemDataManager().setDefaultRange();//AddExtraRange
+
     CCScene* options = WorldMap::scene();
     CCTransitionScene* transition = CCTransitionFade::create(0.5f,options,ccBLACK);
     CCDirector::sharedDirector()->replaceScene(transition);
@@ -11439,6 +11444,7 @@ void GameScene::generateDwarfMission(bool theInstant)
             if (i==_lastSpawnPoints[x])
             {
                 aCanUseCave = false;
+                newDwarfIsSpawn = true;
                 break;
             }
         }
@@ -11463,6 +11469,7 @@ void GameScene::generateDwarfMission(bool theInstant)
         _lastSpawnPoints.push_back(_lastSpawnPoint);
     }
     else{
+    	newDwarfIsSpawn = true;
         _LeftNotSpawnDwatfs+=1;
         return;//Can't spawn dwarf on dwarf
     }
@@ -13409,6 +13416,8 @@ void GameScene::addSpellBullet()
 {
 	if (doItOnce == false)
 	{
+	if (newDwarfIsSpawn == false)
+	{
 	//playInGameSound("dwarf_freeze");
 	
 	//int dwarfIndex = _dwarves->count() - 1; 
@@ -13436,8 +13445,22 @@ void GameScene::addSpellBullet()
     	
     }
 	*/
+	/*
 	if(_mission_SaveDwarfs_Left<=0)
     {
+    	doItOnce = true;
+    	int dwarfIndex = _dwarves->count() - 1;
+		Dwarf* dwarf = static_cast<Dwarf*>(_dwarves->objectAtIndex(dwarfIndex));
+		addSpellDwarf = dwarf;
+	
+		CCCallFuncN* aFunction = CCCallFuncN::create(this, callfuncN_selector(GameScene::finishSpellBullet));
+    	CCSequence* aSequence = CCSequence::create(aFunction,NULL);
+    	runAction(aSequence);	
+    }else{
+    */
+    if(_mission_SaveDwarfs_Left<=0)
+    {
+    	CCLog("Spawning for last dwarf");
     	doItOnce = true;
     	int dwarfIndex = _dwarves->count() - 1;
 		Dwarf* dwarf = static_cast<Dwarf*>(_dwarves->objectAtIndex(dwarfIndex));
@@ -13455,30 +13478,35 @@ void GameScene::addSpellBullet()
 		Dwarf* dwarf = static_cast<Dwarf*>(_dwarves->objectAtIndex(dwarfIndex));
 		addSpellDwarf = dwarf;
 	
-		CCDelayTime* aControlDelay = CCDelayTime::create(3.5f);
+		CCDelayTime* aControlDelay = CCDelayTime::create(4.0f);
 		CCCallFuncN* aFunction = CCCallFuncN::create(this, callfuncN_selector(GameScene::finishSpellBullet));
     	CCSequence* aSequence = CCSequence::create(aControlDelay,aFunction,NULL);
     	runAction(aSequence);	
+	 }
 	}
   }
 }
 
 void GameScene::finishSpellBullet()
 {
+	CCLog("Add effect to flying spell");
 	if(addSpellDwarf == NULL)
 	{
-		
+		CCLog("AddSpell is null");
 	}else{
+	CCLog("Somewhere here");
 	setMasterTrollIdle();	
-	spellBullet = CCSprite::create("small_dot_blue.png");
+	spellBullet = CCSprite::create("effects/spell/dwarf_spelllight.png");
 	spellBullet->setTag(98712);
     spellBullet->setPosition(ccp(_MasterDwarfBase->getPositionX(),_MasterDwarfBase->getPositionY()));
             		
     CCMoveTo* CCMoveTo;
-    CCMoveTo = CCMoveTo::create(0.5f,ccp(addSpellDwarf->getPositionX(), addSpellDwarf->getPositionY()));
+    int movePointX = addSpellDwarf->getPositionX();//For reason if addSpellDwarf is destroyed
+    int movePointY = addSpellDwarf->getPositionY();
+	CCMoveTo = CCMoveTo::create(0.5f,ccp(movePointX, movePointY));
             		
-	CCRepeatForever* aRepeat = CCRepeatForever::create(CCMoveTo);
-    spellBullet->runAction(aRepeat);
+	//CCRepeatForever* aRepeat = CCRepeatForever::create(CCMoveTo); Could be this a Crash reason?
+    spellBullet->runAction(CCMoveTo);
        		
     //CCParticleSystemQuad* p = CCParticleSystemQuad::create("Particles/bullet_part.plist");
     //p->setPosition(ccp(spellBullet->getContentSize().width/2,spellBullet->getContentSize().height/2));
@@ -13497,23 +13525,27 @@ void GameScene::finishSpellBullet()
 void GameScene::removeSpellchild()
 {
 	//float theSpellDistance = ccpDistanceSQ(addSpellDwarf->getPosition(), spellBullet->getPosition());
-	
+	CCLog("Nonem effektu");
 	removeChildByTag(98712);
 	
 	if(_mission_SaveDwarfs_Left<=0)
 	{
-		addSpellDwarf->setPowerButton(101);
-	}
 	
-	 for(int otherIndex = _powersOnMap->count()-1;otherIndex>=0;--otherIndex)
-    {
-	GameItem_PowerUp* bee = static_cast<GameItem_PowerUp*>(_powersOnMap->objectAtIndex(otherIndex));
-    if (bee->mPowerID >= 100)
-		{            
-    	addSpellDwarf->setPowerButton(bee->mPowerID);
-    	bee->onRemove();
-		//removeChildByTag(98712);			
+	}else{	
+	 	for(int otherIndex = _powersOnMap->count()-1;otherIndex>=0;--otherIndex)
+    	{
+		GameItem_PowerUp* bee = static_cast<GameItem_PowerUp*>(_powersOnMap->objectAtIndex(otherIndex));
+    	if (bee->mPowerID >= 100)
+		{
+			if(addSpellDwarf == NULL)
+			{
+				CCLog("AddSpell is null");
+			}else{  
+    			addSpellDwarf->setPowerButton(bee->mPowerID);
+    			bee->onRemove();
+			}	//removeChildByTag(98712);			
     	}
+	  }
 	}
 }
 
@@ -17872,12 +17904,31 @@ void GameScene::UpdateSting(float delta)
     // update trolls
     for (int stingIndex = _stings->count() - 1; stingIndex >= 0; --stingIndex)
     {
-        TrollBullet* DDD = static_cast<TrollBullet*>(_stings->objectAtIndex(stingIndex));
-        if(DDD!= NULL)
+        Sting* DDD = static_cast<Sting*>(_stings->objectAtIndex(stingIndex));
+        if(!DDD->_isDisabled)
         {
-        DDD->update(delta);
-        }else{
-        	
+            DDD->update(delta);
+            
+            //            if (getSpriteOrderZ(troll->getPositionY())!=troll->getZOrder())
+            //                reorderChild(troll, getSpriteOrderZ(troll->getPositionY()));
+        }
+        else
+        {
+            //Create some particles and sound !!!
+            CCParticleSystemQuad* p = CCParticleSystemQuad::create("Particles/bullet_explode.plist");
+            p->setPosition(DDD->getPositionX(), DDD->getPositionY());
+            p->setAutoRemoveOnFinish(true);
+            addChild(p,kHUD_Z_Order-1);
+            
+            if(DDD->_dwarf != NULL && DDD->_dwarf->getChildByTag(MT_BULLET_ID) != NULL){
+                DDD->_dwarf->removeChildByTag(MT_BULLET_ID);
+            }
+            
+            //Remove it !!!
+            this->removeChild(DDD);
+            _stings->removeObjectAtIndex(stingIndex);
+            CCLOG("Removed Bullet");
+            DDD = NULL;
         }
         //Check if does not hit other dwarf !!!
         if(DDD != NULL)
@@ -17896,20 +17947,21 @@ void GameScene::UpdateSting(float delta)
 						//CCLog("so far this works22");	
                         if(DDD != NULL && DDD->_dwarf != NULL && DDD->_dwarf->getChildByTag(MT_BULLET_ID) != NULL){
                             DDD->_dwarf->removeChildByTag(MT_BULLET_ID);
+                            this->removeChildByTag(MT_BULLET_ID);
                         }
-                        //CCLog("so far this works");
+                        CCLog("so far this works");
                         DDD->OnDoAction(dwarf);
+                        this->removeChildByTag(MT_BULLET_ID);
             			
     					int otherIndex = _otherEnemy->count()-1;//Really, for now.
     					if (otherIndex >= 0)
     					{
                         dwarf->removeFromSave();
                         }
-                        
-                        this->removeChild(DDD);
-            			_stings->removeObjectAtIndex(stingIndex);
-            			CCLOG("Removed Bullet");
-            			DDD = NULL;
+                    
+            			//_stings->removeObjectAtIndex(stingIndex);
+            			//CCLOG("Removed Bullet");
+            			//DDD = NULL;
                         
                         //gameover for other dwarf !!!
 //                        troll->_isDisabled = true;
@@ -18245,7 +18297,40 @@ void GameScene::CreateBattleArena()
     // The progress bar !!!
     // Dwarf king or electro machine
     CCSize aScreenSize = CCDirector::sharedDirector()->getVisibleSize();
-    CCSprite* aDummy;
+    
+    mBattleBar_MachineBase = CCSprite::create("small_dot_red.png");
+    
+    // The new stuff
+    /*
+    if(mDwarfCollectMachine){
+        mBattleBar_MachineBase->setPosition(ccp(aScreenSize.width/2,60));
+    }
+    else{
+        mBattleBar_MachineBase->setPosition(ccp(aScreenSize.width-60,294));
+    }
+    */
+    
+    mBattleBar_MachineBase->setPosition(ccp(aScreenSize.width-60,294));
+    
+    mBattleBar_MachineBase->setScaleX(0.0f);     //(0.15);
+    mBattleBar_MachineBase->setScaleY(0.0f);     //(0.3);
+    
+    addChild(mBattleBar_MachineBase,kHUD_Z_Order-1);
+    
+    CCSprite* aDummy = CCSprite::create("Interfeiss/challenges/daily/progress_days.png");
+    mBattleBar_MachineBase->addChild(aDummy);
+    
+    // The actual progress bar
+    mBattleBar_MachinePower = CCSprite::create("Interfeiss/challenges/daily/progress_days_fill.png");
+    mBattleBar_MachinePower->setAnchorPoint(ccp(0,0.5f));
+    mBattleBar_MachinePower->setPosition(ccp((aDummy->getContentSize().width-mBattleBar_MachinePower->getContentSize().width)/2,aDummy->getContentSize().height/2));
+    aDummy->addChild(mBattleBar_MachinePower);
+    
+    // The progress bar
+    mBattleBar_MachinePower->setTextureRect(CCRect(0, 0,
+                                              mBattleBar_MachinePower->getTexture()->getContentSize().width*(0.0f),
+                                              mBattleBar_MachinePower->getTexture()->getContentSize().height));
+    
     
     //----------------------------------------------------------------
     // The base sprites !!!
@@ -18272,32 +18357,6 @@ void GameScene::CreateBattleArena()
     mBattleBar_TrollHP->setTextureRect(CCRect(0, 0,
                                                    mBattleBar_TrollHP->getTexture()->getContentSize().width*(1.0f),
                                                    mBattleBar_TrollHP->getTexture()->getContentSize().height));
-    
-    // The new crystal bar? [USES SPRITE SHEETS - NOPE - DOES NOT WORK WITH SETTEXTURERECT]
-    mBattleBar_MachineBase = CCSprite::create("small_dot_red.png");
-    
-    mBattleBar_MachineBase->setPosition(ccp(aScreenSize.width-40,aScreenSize.height-90));
-    
-    mBattleBar_MachineBase->setOpacity(0);
-    mBattleBar_MachineBase->setScaleX(0.0f);     //(0.15);
-    mBattleBar_MachineBase->setScaleY(0.0f);     //(0.3);
-    
-    addChild(mBattleBar_MachineBase,kHUD_Z_Order-1);
-    
-    // The actual progress bar
-    mBattleBar_MachinePower = CCSprite::create("InGameHUD/DK_crystal_bar_fill.png");
-    mBattleBar_MachinePower->setAnchorPoint(ccp(0.5,1.0));
-    mBattleBar_MachinePower->setRotation(180);
-    mBattleBar_MachinePower->setPosition(ccp(2,(-mBattleBar_MachinePower->getContentSize().height/2)-20));
-    mBattleBar_MachineBase->addChild(mBattleBar_MachinePower);
-    
-    aDummy = CCSprite::create("InGameHUD/DK_crystal_bar.png");
-    mBattleBar_MachineBase->addChild(aDummy);
-    
-    // The progress bar
-    mBattleBar_MachinePower->setTextureRect(CCRect(0, 0,
-                                                   mBattleBar_MachinePower->getTexture()->getContentSize().width,
-                                                   mBattleBar_MachinePower->getTexture()->getContentSize().height*(0.0f)));
 }
 
 void GameScene::UpdateSmoothBattleBars(float delta)
@@ -18339,8 +18398,8 @@ void GameScene::UpdateSmoothBattleBars(float delta)
             if(aTotalValue>1)aTotalValue = 1;
             
             mBattleBar_MachinePower->setTextureRect(CCRect(0, 0,
-                                                           mBattleBar_MachinePower->getTexture()->getContentSize().width,
-                                                           mBattleBar_MachinePower->getTexture()->getContentSize().height*(aTotalValue)));
+                                                           mBattleBar_MachinePower->getTexture()->getContentSize().width*(aTotalValue),
+                                                           mBattleBar_MachinePower->getTexture()->getContentSize().height));
         }
     }
     else
@@ -18365,8 +18424,8 @@ void GameScene::UpdateSmoothBattleBars(float delta)
             if(aTotalValue>1)aTotalValue = 1;
             
             mBattleBar_MachinePower->setTextureRect(CCRect(0, 0,
-                                                           mBattleBar_MachinePower->getTexture()->getContentSize().width,
-                                                           mBattleBar_MachinePower->getTexture()->getContentSize().height*(aTotalValue)));
+                                                           mBattleBar_MachinePower->getTexture()->getContentSize().width*(aTotalValue),
+                                                           mBattleBar_MachinePower->getTexture()->getContentSize().height));
         }
     }
 }
@@ -18448,8 +18507,9 @@ void GameScene::UpdateBattleLabel()
             }
             else
             {
-                mNeedToSpawnSpellOnDwarf = true;
-                mMasterTroll_Attack = 0;//Reset to 0
+                //mNeedToSpawnSpellOnDwarf = true;
+                //CCLog("Game Tutorial Spell System");
+                //mMasterTroll_Attack = 0;//Reset to 0
             }
 
             
@@ -18462,7 +18522,7 @@ void GameScene::UpdateBattleLabel()
                 }
             }
             
-            return;
+            //return;
             
             // Check what types are selected in shop !!!
             std::vector<int> spellsToSpanw = User::getInstance()->getItemDataManager().getActiveItems();
@@ -18492,7 +18552,6 @@ void GameScene::UpdateBattleLabel()
                 	}else{
                 		SetDwarfKingAnimation("Spell1");
                 	}
-                	//CCDelayTime* beforeShot = CCDelayTime::create(0.0f);
                 	CCDelayTime* spellAnimationDelay = CCDelayTime::create(0.0f);
         			CCCallFuncN* shotFunc = CCCallFuncN::create(this, callfuncN_selector(GameScene::addSpellBullet));
         			CCSequence* aSeqShot = CCSequence::create(spellAnimationDelay,shotFunc,NULL);
